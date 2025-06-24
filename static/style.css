@@ -1,0 +1,120 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #f5f5f5;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.order-list, .schedule {
+    background-color: white;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    z-index: 9999;
+}
+
+.alert.error {
+    border: 2px solid #dc3545;
+    color: #721c24;
+}
+
+.alert.warning {
+    border: 2px solid #ffc107;
+    color: #856404;
+}
+
+.close-btn {
+    float: right;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.orders-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px 0;
+}
+
+.order-card {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 10px;
+    width: 150px;
+    cursor: move;
+    background-color: #f9f9f9;
+}
+
+.order-card.scheduled {
+    background-color: #e6f7ff;
+    position: relative;
+}
+
+.order-header {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.order-detail {
+    font-size: 0.9em;
+    color: #555;
+}
+
+.shift-container {
+    display: flex;
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.shift {
+    flex: 1;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 10px;
+    background-color: #f0f0f0;
+}
+
+.shift h4 {
+    margin-top: 0;
+}
+
+.shift-hours {
+    font-weight: bold;
+    margin: 5px 0;
+}
+
+.shift-orders {
+    min-height: 100px;
+    padding: 10px;
+    background-color: white;
+    border-radius: 3px;
+    margin-top: 10px;
+}
+
+.day-slot {
+    margin-bottom: 20px;
+}
+
+.remove-btn {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: red;
+    color: white;
+    border: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}

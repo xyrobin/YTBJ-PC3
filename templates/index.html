@@ -1,10 +1,201 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
+
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <title>生产工单排产系统</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="/static/Sortable.js"></script>
 </head>
+
 <body>
-$END$
+    <div class="container">
+        <!-- 工单列表 -->
+        <div class="order-list">
+            <h2>待排产工单</h2>
+            <div id="unplanned-orders" class="orders-container">
+                {% for order in orders %}
+                <div class="order-card" draggable="true" data-order-no="{{ order.scgdh }}"
+                    data-hours-needed="{{ order.gsxs }}" data-earliest-date="{{ order.zzscrq }}"
+                    data-delivery-date="{{ order.jhrq }}">
+                    <div class="order-header">{{ order.scgdh }}</div>
+                    <div class="order-detail">需时: {{ order.gsxs }}h</div>
+                    <div class="order-detail">最早: {{ order.zzscrq }}</div>
+                    <div class="order-detail">交货: {{ order.jhrq }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- 排产计划 -->
+        <div class="schedule">
+            <h2>生产计划</h2>
+            <div id="schedule-slots">
+                {% for day in schedule_slots %}
+                <div class="day-slot">
+                    <h3>{{ day.date }}</h3>
+                    <div class="shift-container">
+                        <div class="shift" data-date="{{ day.date }}" data-shift="A">
+                            <h4>A班 (8:00-20:00)</h4>
+                            <div class="shift-hours">已排: {{ day.shift_a.hours_used }} / 12h</div>
+                            <div class="shift-orders" id="shift-{{ day.date }}-A">
+                                {% for order in day.shift_a.orders %}
+                                <div class="order-card scheduled" data-order-no="{{ order.scgdh }}"
+                                    data-hours-needed="{{ order.gsxs }}">
+                                    <div class="order-header">{{ order.scgdh }}</div>
+                                    <div class="order-detail">{{ order.gsxs }}h</div>
+                                    <button class="remove-btn" onclick="removeOrder('{{ order.scgdh }}')">×</button>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="shift" data-date="{{ day.date }}" data-shift="B">
+                            <h4>B班 (20:00-次日8:00)</h4>
+                            <div class="shift-hours">已排: {{ day.shift_b.hours_used }} / 12h</div>
+                            <div class="shift-orders" id="shift-{{ day.date }}-B">
+                                {% for order in day.shift_b.orders %}
+                                <div class="order-card scheduled" data-order-no="{{ order.scgdh }}"
+                                    data-hours-needed="{{ order.gsxs }}">
+                                    <div class="order-header">{{ order.scgdh }}</div>
+                                    <div class="order-detail">{{ order.gsxs }}h</div>
+                                    <button class="remove-btn" onclick="removeOrder('{{ order.scgdh }}')">×</button>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <div id="error-alert" class="alert" style="display:none; position:fixed; top:20px; right:20px; max-width:400px;">
+        <span class="close-btn" onclick="this.parentElement.style.display='none'">&times;</span>
+        <div id="alert-content"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // 拖拽开始事件
+            document.addEventListener('dragstart', function (e) {
+                if (e.target.classList.contains('order-card')) {
+                    e.dataTransfer.setData('text/plain', JSON.stringify({
+                        orderNo: e.target.dataset.orderNo,
+                        hoursNeeded: e.target.dataset.hoursNeeded,
+                        earliestDate: e.target.dataset.earliestDate,
+                        deliveryDate: e.target.dataset.deliveryDate
+                    }));
+                }
+            });
+
+            // 设置放置区域
+            document.querySelectorAll('.shift-orders').forEach(container => {
+                container.addEventListener('dragover', function (e) {
+                    e.preventDefault();
+                    this.style.backgroundColor = '#f0f8ff';
+                });
+
+                container.addEventListener('dragleave', function (e) {
+                    this.style.backgroundColor = '';
+                });
+
+                container.addEventListener('drop', function (e) {
+                    e.preventDefault();
+                    this.style.backgroundColor = '';
+
+                    const shiftBox = this.closest('.shift');
+                    const date = shiftBox.dataset.date;
+                    const shift = shiftBox.dataset.shift;
+                    const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+
+                    // 检查班次容量
+                    const hoursDisplay = shiftBox.querySelector('.shift-hours');
+                    const currentHours = parseFloat(hoursDisplay.textContent.split(':')[1].split('/')[0].trim());
+                    const newHours = currentHours + parseFloat(data.hoursNeeded);
+
+                    if (newHours > 12) {
+                        alert('班次工时已满！');
+                        return;
+                    }
+
+                    // 检查最早生产日期
+                    const planDate = new Date(date);
+                    const earliestDate = new Date(data.earliestDate);
+
+                    if (planDate < earliestDate) {
+                        if (!confirm(`警告：排产日期(${date})早于最早生产日期 ${data.earliestDate})，确定要继续吗？`)) {
+                            return;
+                        }
+                    }
+
+                    // 检查交货日期
+                    const deliveryDate = new Date(data.deliveryDate);
+                    if (planDate > deliveryDate) {
+                        if (!confirm(`警告：排产日期(${date})晚于交货日期(${data.deliveryDate})，确定要继续吗？`)) {
+                            return;
+                        }
+                    }
+
+                    // 调用API排产
+                    fetch('/assign_order', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            order_no: data.orderNo,
+                            plan_date: date,
+                            shift: shift,
+                            //hours_needed: data.hoursNeeded
+                        })
+                    })
+                    .then(response => response.json())
+                        .then(result => {
+                            if (result.success === true || result.success === 'warning') {
+                                if (result.message) alert(result.message);
+                                window.location.reload(); // 刷新页面获取最新数据
+                            } else {
+                                alert(result.message || '排产失败');
+                            }
+                        });
+                });
+            });
+        });
+
+        // 删除已排产工单
+        function removeOrder(orderNo) {
+            if (confirm('确定要从排产计划中移除该工单吗？')) {
+                fetch('/remove_order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ order_no: orderNo })
+                }).then(response => response.json())
+                    .then(result => {
+                        if (result.success) {
+                            window.location.reload(); // 刷新页面获取最新数据
+                        } else {
+                            alert(result.message || '操作失败');
+                        }
+                    });
+            }
+        }
+    </script>
+
 </body>
+
 </html>
+//异常处理
+<script>
+    function showAlert(message, type = 'error') {
+        const alertDiv = document.getElementById('error-alert');
+        alertDiv.style.backgroundColor = type === 'error' ? '#f8d7da' : '#fff3cd';
+        document.getElementById('alert-content').innerHTML = message;
+        alertDiv.style.display = 'block';
+        setTimeout(() => { alertDiv.style.display = 'none'; }, 5000);
+    }
+
+    // 在AJAX回调中添加
+    // if (response.success === false || response.success === 'warning') {
+    //     showAlert(response.message, response.success === 'warning' ? 'warning' : 'error');
+    // }
+
+</script>
