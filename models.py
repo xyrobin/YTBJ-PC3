@@ -13,12 +13,23 @@ class ProductionOrder:
         """获取所有待排产工单（工单计划状态=0），按最早生产日期升序排序"""
         with ProductionOrder.get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("""
-                SELECT SCGDH, GSXS, ZZSCRQ, JHRQ
-                FROM uf_SCGDWH 
-                WHERE GDJHZT = 0 
-                ORDER BY ZZSCRQ
-            """)
+            cursor.execute(
+                """
+                    SELECT a.SCGDH,
+                        a.GSXS,
+                        a.ZZSCRQ,
+                        a.JHRQ,
+                        b.KHMC,
+                        b.PH     PH,
+                        b.gg     GG,
+                        b.JHZS   SL
+                    FROM uf_SCGDWH a
+                    left join A_PC_DPCSCGD_VW b
+                        on a.scgdh = b.SCGDH
+                    WHERE a.GDJHZT = 0
+                    ORDER BY a.ZZSCRQ
+            """
+            )
             columns = [col[0].lower() for col in cursor.description]
             return [dict(zip(columns, row)) for row in cursor.fetchall()]
 
@@ -27,11 +38,24 @@ class ProductionOrder:
         """获取已经排产的工单（工单计划状态=1）"""
         with ProductionOrder.get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("""
-                SELECT SCGDH, GSXS, PCRQ, BC
-                FROM uf_SCGDWH 
-                WHERE GDJHZT = 1
-            """)
+            cursor.execute(
+                """
+                    SELECT a.SCGDH,
+                            a.GSXS,
+                            a.PCRQ,
+                            a.BC,
+                            a.ZZSCRQ,
+                            a.JHRQ,
+                            b.KHMC,
+                            b.PH     PH,
+                            b.gg     GG,
+                            b.JHZS   SL
+                        FROM uf_SCGDWH a
+                        left join A_PC_DPCSCGD_VW b
+                        on a.scgdh = b.SCGDH
+                    WHERE a.GDJHZT = 1
+            """
+            )
             columns = [col[0].lower() for col in cursor.description]
             return [dict(zip(columns, row)) for row in cursor.fetchall()]
 
@@ -40,13 +64,16 @@ class ProductionOrder:
         """更新工单排产信息"""
         with ProductionOrder.get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("""
+            cursor.execute(
+                """
                 UPDATE uf_SCGDWH 
                 SET GDJHZT = 1, 
                     PCRQ = :plan_date,
                     BC = :shift
                 WHERE SCGDH = :order_no
-            """, {'order_no': order_no, 'plan_date': plan_date, 'shift': shift})
+            """,
+                {"order_no": order_no, "plan_date": plan_date, "shift": shift},
+            )
             conn.commit()
 
     @staticmethod
@@ -54,13 +81,16 @@ class ProductionOrder:
         """重置工单排产信息"""
         with ProductionOrder.get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("""
+            cursor.execute(
+                """
                 UPDATE uf_SCGDWH 
                 SET GDJHZT = 0, 
                     PCRQ = NULL,
                     BC = NULL
                 WHERE SCGDH = :order_no
-            """, {'order_no': order_no})
+            """,
+                {"order_no": order_no},
+            )
             conn.commit()
 
     @staticmethod
@@ -73,26 +103,22 @@ class ProductionOrder:
 
         for i in range(3):
             date = today + timedelta(days=i)
-            date_str = date.strftime('%Y-%m-%d')
+            date_str = date.strftime("%Y-%m-%d")
 
             # Initialize shifts
-            shift_a = {'hours_used': 0, 'orders': []}
-            shift_b = {'hours_used': 0, 'orders': []}
+            shift_a = {"hours_used": 0, "orders": []}
+            shift_b = {"hours_used": 0, "orders": []}
 
             # Filter orders for this date
             for order in scheduled_orders:
-                if order['pcrq'] == date_str:
-                    if order['bc'].upper() == 'A':
-                        shift_a['orders'].append(order)
-                        shift_a['hours_used'] += order['gsxs']
-                    elif order['bc'].upper() == 'B':
-                        shift_b['orders'].append(order)
-                        shift_b['hours_used'] += order['gsxs']
+                if order["pcrq"] == date_str:
+                    if order["bc"].upper() == "A":
+                        shift_a["orders"].append(order)
+                        shift_a["hours_used"] += order["gsxs"]
+                    elif order["bc"].upper() == "B":
+                        shift_b["orders"].append(order)
+                        shift_b["hours_used"] += order["gsxs"]
 
-            slots.append({
-                'date': date_str,
-                'shift_a': shift_a,
-                'shift_b': shift_b
-            })
+            slots.append({"date": date_str, "shift_a": shift_a, "shift_b": shift_b})
 
         return slots

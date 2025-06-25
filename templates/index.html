@@ -14,13 +14,19 @@
             <h2>待排产工单</h2>
             <div id="unplanned-orders" class="orders-container">
                 {% for order in orders %}
-                <div class="order-card" draggable="true" data-order-no="{{ order.scgdh }}"
-                    data-hours-needed="{{ order.gsxs }}" data-earliest-date="{{ order.zzscrq }}"
-                    data-delivery-date="{{ order.jhrq }}">
+                <div class="order-card" draggable="true" data-order-no="{{ order.scgdh }}" data-ph="{{ order.ph }}"
+                    data-gg="{{ order.gg }}" data-sl="{{ order.sl }}" data-hours-needed="{{ order.gsxs }}"
+                    data-earliest-date="{{ order.zzscrq }}" data-delivery-date="{{ order.jhrq }}">
+                    <div class="order-tooltip">
+                        <div>牌号: {{ order.ph }}</div>
+                        <div>规格: {{ order.gg }}</div>
+                        <div>数量: {{ order.sl }}</div>
+                    </div>
                     <div class="order-header">{{ order.scgdh }}</div>
                     <div class="order-detail">需时: {{ order.gsxs }}h</div>
                     <div class="order-detail">最早: {{ order.zzscrq }}</div>
                     <div class="order-detail">交货: {{ order.jhrq }}</div>
+                    <div class="order-detail">客户: {{ order.khmc }}</div>
                 </div>
                 {% endfor %}
             </div>
@@ -55,8 +61,9 @@
                                 {% for order in day.shift_b.orders %}
                                 <div class="order-card scheduled" data-order-no="{{ order.scgdh }}"
                                     data-hours-needed="{{ order.gsxs }}">
-                                    <div class="order-header">{{ order.scgdh }}</div>
-                                    <div class="order-detail">{{ order.gsxs }}h</div>
+                                    <div class="order-header">{{ order.scgdh }} - {{ order.gsxs }}h</div>
+                                    <div class="order-detail">{{ order.zzscrq }}/{{ order.jhrq }}/{{ order.khmc }}/{{
+                                        order.ph }}/{{ order.sl }}</div>
                                     <button class="remove-btn" onclick="removeOrder('{{ order.scgdh }}')">×</button>
                                 </div>
                                 {% endfor %}
@@ -148,7 +155,7 @@
                             //hours_needed: data.hoursNeeded
                         })
                     })
-                    .then(response => response.json())
+                        .then(response => response.json())
                         .then(result => {
                             if (result.success === true || result.success === 'warning') {
                                 if (result.message) alert(result.message);
@@ -198,4 +205,21 @@
     //     showAlert(response.message, response.success === 'warning' ? 'warning' : 'error');
     // }
 
+    // 新增鼠标移动监听
+    let currentTooltip = null;
+    let tooltipOffset = 200;
+
+    function showTooltip(element) {
+        currentTooltip = element.querySelector('.order-card');
+        currentTooltip.style.display = 'block';
+        currentTooltip.style.transform = `translate(${event.clientX + tooltipOffset}px, ${event.clientY + tooltipOffset}px)`;
+    }
+
+    // function updateTooltipPosition(e) {
+    //     if (currentTooltip) {
+    //         currentTooltip.style.transform = `translate(${e.clientX + tooltipOffset}px, ${e.clientY + tooltipOffset}px)`;
+    //     }
+    // }
+    
+    document.addEventListener('mousemove', showTooltip);
 </script>
