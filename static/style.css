@@ -63,15 +63,66 @@ body {
 .order-card.scheduled {
     background-color: #e6f7ff;
     position: relative;
+    display: block;
+    padding: 0;
+
+}
+
+.order-tooltip-scheduled{
+    /* visibility: hidden; */
+    width: 200px;
+    background-color: #555;
+    color: #fff;
+    text-align: left;
+    border-radius: 6px;
+    padding: 8px;
+    position: absolute;
+    z-index: 9999;
+    /* 关键：确保最高层级 */
+    top: 100%;
+    /* 显示在元素下方 */
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.3s;
+    overflow: visible;
+}
+.order-card.scheduled .order-tooltip-scheduled::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    bottom: 100%;
+    top: auto;
+    border-color: transparent transparent #555 transparent;
+}
+
+.order-card.scheduled:hover .order-tooltip-scheduled {
+    /* display: block;
+    top: auto; 
+    left: auto;
+    transform: translate(0,0);
+    transition: transform 0.05s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    will-change: transform;
+    transform-origin: left top; */
+    visibility: visible;
+    opacity: 1;
+    overflow: visible;
+    z-index: 9999;
+
 }
 
 .order-header {
     font-weight: bold;
-    margin-bottom: 5px;
+    margin: 5px;
 }
 
 .order-detail {
     font-size: 0.9em;
+    margin: 5px;
     color: #555;
 }
 
@@ -100,10 +151,10 @@ body {
 
 .shift-orders {
     min-height: 100px;
-    padding: 10px;
+    /* padding: 10px; */
     background-color: white;
     border-radius: 3px;
-    margin-top: 10px;
+    /* margin-top: 10px; */
 }
 
 .day-slot {
@@ -144,7 +195,7 @@ body {
     border-radius: 6px;
     padding: 8px;
     position: absolute;
-    z-index: 9999;
+    z-index: 999;
     /* 关键：确保最高层级 */
     top: 100%;
     /* 显示在元素下方 */
@@ -200,6 +251,56 @@ body {
     visibility: visible;
     opacity: 1;
     overflow: visible;
-    z-index: 9999;
+    z-index: 999;
 
+}
+
+/* 时间刻度容器样式 */
+.time-scale {
+    margin-top: 5px;
+    width: 20px;
+    height: 480px;
+    background-color: #e0f2e9;
+    /* 绿色背景 */
+
+    left: 40px;
+    top: 0;
+    float: left;
+    background-image: repeating-linear-gradient(to bottom,
+            #5d9c7c,
+            /* 绿色刻度线 */
+            #5d9c7c 1px,
+            transparent 1px,
+            transparent 20px
+            /* 每10px一个刻度 */
+        );
+}
+
+.scale-mark-container {
+    width: 30px;
+    height: 480px;
+    float: left;
+    background-color: #e0f2e9;
+    
+}
+
+/* 刻度值样式 */
+.scale-mark {
+
+    /* left: 5px; */
+    font-size: 12px;
+    font-display: right;
+    /* transform: translateY(-50%); */
+    color: #333;
+    height: 40px;
+    width: 10px;
+}
+
+/* 班次容器位置调整 */
+.shift-orders {
+    margin-top: 5px;
+    position: relative;
+    height: 480px;
+    width: 480px;
+    float: left;
 }
