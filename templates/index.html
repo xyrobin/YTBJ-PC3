@@ -38,7 +38,10 @@
             <div id="schedule-slots">
                 {% for day in schedule_slots %}
                 <div class="day-slot">
-                    <h3>{{ day.date }}</h3>
+                    <div class="day-header">
+                        <h3>{{ day.date }}</h3>
+                        <button class="toggle-btn">+</button>
+                    </div>
                     <div class="shift-container">
                         <div class="shift" data-date="{{ day.date }}" data-shift="A">
                             <h4>A班 (8:00-20:00)</h4>
@@ -277,4 +280,18 @@
     // }
 
     document.addEventListener('mousemove', showTooltip);
+
+    // 折叠/展开功能
+    document.querySelectorAll('.toggle-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const daySlot = this.closest('.day-slot');
+            const shiftContainer = daySlot.querySelector('.shift-container');
+            const isExpanded = shiftContainer.style.display !== 'none';
+            
+            // 切换显示状态
+            shiftContainer.style.display = isExpanded ? 'none' : 'flex';
+            // 更新按钮文本
+            this.textContent = isExpanded ? '+' : '-';
+        });
+    });
 </script>
