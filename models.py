@@ -1,124 +1,96 @@
 import oracledb
-from config import conn_str as DB_CONFIG
-from datetime import datetime, timedelta
+from datetime import datetime
+from config import conn_str
 
 
-class ProductionOrder:
-    @staticmethod
-    def get_connection():
-        return oracledb.connect(DB_CONFIG)
+class ProductionOrderService:
+    def __init__(self):
+        self.connection = oracledb.connect(conn_str)
+        self.cursor = self.connection.cursor()
 
-    @staticmethod
-    def get_unplanned_orders():
-        """获取所有待排产工单（工单计划状态=0），按最早生产日期升序排序"""
-        with ProductionOrder.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                    SELECT a.SCGDH,
-                        a.GSXS,
-                        a.ZZSCRQ,
-                        a.JHRQ,
-                        b.KHMC,
-                        b.PH     PH,
-                        b.gg     GG,
-                        b.JHZS   SL
-                    FROM uf_SCGDWH a
-                    left join A_PC_DPCSCGD_VW b
-                        on a.scgdh = b.SCGDH
-                    WHERE a.GDJHZT = 0
-                    ORDER BY a.ZZSCRQ
+    def get_pending_orders(self):
+        # """获取所有待排产工单（状态=0）并按最早生产日期升序排序"""
+        query = """
+          SELECT a.SCGDH,
+         a.GSXS,
+         a.JHKSRQ,
+         a.JHKSSJ,
+         a.JHJSRQ,
+         a.JHJSSJ,
+         a.BC,
+         a.ZZSCRQ,
+         a.ZZSCSJ,
+         a.JHRQ,
+         a.JHSJ,
+         b.KHMC,
+         b.PH     PH,
+         b.gg     GG,
+         b.JHZS   SL
+    FROM uf_SCGDWH a
+    left join A_PC_DPCSCGD_VW b
+      on a.scgdh = b.SCGDH
+   WHERE a.GDJHZT = 0
+        """
+        self.cursor.execute(query)
+        columns = [col[0].lower() for col in self.cursor.description]
+        return [dict(zip(columns, row)) for row in self.cursor.fetchall()]
+
+    def get_scheduled_orders(self):
+        # 获取所有已排产工单（状态=1）
+        query = """
+        SELECT SCGDH, GSXS, JHKSRQ, JHKSSJ 
+        FROM uf_SCGDWH 
+        WHERE GDJHZT = 1
+        """
+        self.cursor.execute(query)
+        columns = [col[0].lower() for col in self.cursor.description]
+        return [dict(zip(columns, row)) for row in self.cursor.fetchall()]
+
+    def schedule_order(self, order_no, plan_date, shift, start_time):
+        # """更新工单状态为已排产"""
+        try:
+            # 检查班次是否合法
+            if shift not in ["A", "B"]:
+                return {"success": False, "message": "无效的班次，必须是A或B"}
+
+            # 更新工单状态和排产信息
+            update_sql = """
+            UPDATE uf_SCGDWH
+            SET GDJHZT = 1, JHKSRQ = :plan_date, BC = :shift, JHKSSJ = :start_time
+            WHERE SCGDH = :order_no
             """
+            self.cursor.execute(
+                update_sql,
+                {
+                    "plan_date": plan_date,
+                    "shift": shift,
+                    "start_time": start_time,
+                    "order_no": order_no,
+                },
             )
-            columns = [col[0].lower() for col in cursor.description]
-            return [dict(zip(columns, row)) for row in cursor.fetchall()]
+            self.connection.commit()
+            return {"success": True}
+        except Exception as e:
+            self.connection.rollback()
+            return {"success": False, "message": str(e)}
 
-    @staticmethod
-    def get_scheduled_orders():
-        """获取已经排产的工单（工单计划状态=1）"""
-        with ProductionOrder.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                    SELECT a.SCGDH,
-                            a.GSXS,
-                            a.PCRQ,
-                            a.BC,
-                            a.ZZSCRQ,
-                            a.JHRQ,
-                            b.KHMC,
-                            b.PH     PH,
-                            b.gg     GG,
-                            b.JHZS   SL
-                        FROM uf_SCGDWH a
-                        left join A_PC_DPCSCGD_VW b
-                        on a.scgdh = b.SCGDH
-                    WHERE a.GDJHZT = 1
+    def unschedule_order(self, order_no):
+        # """取消排产，将工单状态改回待排产"""
+        try:
+            update_sql = """
+            UPDATE uf_SCGDWH
+            SET GDJHZT = 0, JHKSRQ = NULL, BC = NULL, JHKSSJ = NULL
+            WHERE SCGDH = :order_no
             """
-            )
-            columns = [col[0].lower() for col in cursor.description]
-            return [dict(zip(columns, row)) for row in cursor.fetchall()]
+            self.cursor.execute(update_sql, {"order_no": order_no})
+            self.connection.commit()
+            return {"success": True}
+        except Exception as e:
+            self.connection.rollback()
+            return {"success": False, "message": str(e)}
 
-    @staticmethod
-    def update_order_schedule(order_no, plan_date, shift):
-        """更新工单排产信息"""
-        with ProductionOrder.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                UPDATE uf_SCGDWH 
-                SET GDJHZT = 1, 
-                    PCRQ = :plan_date,
-                    BC = :shift
-                WHERE SCGDH = :order_no
-            """,
-                {"order_no": order_no, "plan_date": plan_date, "shift": shift},
-            )
-            conn.commit()
-
-    @staticmethod
-    def reset_order_schedule(order_no):
-        """重置工单排产信息"""
-        with ProductionOrder.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                UPDATE uf_SCGDWH 
-                SET GDJHZT = 0, 
-                    PCRQ = NULL,
-                    BC = NULL
-                WHERE SCGDH = :order_no
-            """,
-                {"order_no": order_no},
-            )
-            conn.commit()
-
-    @staticmethod
-    def get_schedule_slots():
-        """获取未来三天的排产情况"""
-        slots = []
-        today = datetime.now().date()
-
-        scheduled_orders = ProductionOrder.get_scheduled_orders()
-
-        for i in range(3):
-            date = today + timedelta(days=i)
-            date_str = date.strftime("%Y-%m-%d")
-
-            # Initialize shifts
-            shift_a = {"hours_used": 0, "orders": []}
-            shift_b = {"hours_used": 0, "orders": []}
-
-            # Filter orders for this date
-            for order in scheduled_orders:
-                if order["pcrq"] == date_str:
-                    if order["bc"].upper() == "A":
-                        shift_a["orders"].append(order)
-                        shift_a["hours_used"] += order["gsxs"]
-                    elif order["bc"].upper() == "B":
-                        shift_b["orders"].append(order)
-                        shift_b["hours_used"] += order["gsxs"]
-
-            slots.append({"date": date_str, "shift_a": shift_a, "shift_b": shift_b})
-
-        return slots
+    def __del__(self):
+        if hasattr(self, "cursor") and self.cursor:
+            self.cursor.close()
+        if hasattr(self, "connection") and self.connection:
+            self.connection.close()
