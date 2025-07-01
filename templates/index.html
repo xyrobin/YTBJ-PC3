@@ -27,6 +27,14 @@
     </div>
 
     <script>
+        // 保存滚动位置到localStorage
+        window.addEventListener('beforeunload', function() {
+            const orderPool = document.getElementById('orderPool');
+            const shiftContainer = document.querySelector('.shift-container');
+            if (orderPool) localStorage.setItem('orderPoolScrollTop', orderPool.scrollTop);
+            if (shiftContainer) localStorage.setItem('shiftContainerScrollTop', shiftContainer.scrollTop);
+        });
+
         // 初始化拖拽功能
         document.addEventListener('DOMContentLoaded', function () {
             // 先初始化班次表格
@@ -45,6 +53,17 @@
                 .then(response => response.json())
                 .then(scheduledOrders => {
                     renderScheduledOrders(scheduledOrders);
+                })
+                .finally(() => {
+                    // 恢复滚动位置
+                    const orderPoolScrollTop = localStorage.getItem('orderPoolScrollTop');
+                    const shiftContainerScrollTop = localStorage.getItem('shiftContainerScrollTop');
+                    if (orderPoolScrollTop) {
+                        document.getElementById('orderPool').scrollTop = parseInt(orderPoolScrollTop);
+                    }
+                    if (shiftContainerScrollTop) {
+                        document.querySelector('.shift-container').scrollTop = parseInt(shiftContainerScrollTop);
+                    }
                 });
         });
 
@@ -98,11 +117,12 @@
             let rows = [];
 
             // 为每天创建A/B两个班次
-            dates.forEach(dateInfo => {
-                // A班 (8:00-20:00)
-                rows.push(createShiftRow(dateInfo, 'A', '8:00-20:00'));
-                // B班 (20:00-次日8:00)
-                rows.push(createShiftRow(dateInfo, 'B', '20:00-8:00'));
+            // 修改initShiftTable中的日期循环
+            dates.forEach((dateInfo, dateIndex) => {
+                // A班 (8:00-20:00) - 包含日期单元格，合并A/B两班共50行
+                rows.push(createShiftRow(dateInfo, 'A', '8:00-20:00', dateIndex, true));
+                // B班 (20:00-次日8:00) - 不包含日期单元格
+                rows.push(createShiftRow(dateInfo, 'B', '20:00-8:00', dateIndex, false));
             });
 
             tableBody.innerHTML = rows.join('');
@@ -110,20 +130,26 @@
 
         // 创建班次行
         // 修改createShiftRow函数以生成多个时间段行
-        function createShiftRow(dateInfo, shift, timeRange) {
+        function createShiftRow(dateInfo, shift, timeRange, dateIndex, includeDateCell) {
             const timeSlots = generateTimeSlots(shift);
             const rows = [];
-
+        
             // 创建日期和班次标题行
-            rows.push(`<tr class="shift-header-row">
-                <td class="date-cell" rowspan="${timeSlots.length}">${dateInfo.label}</td>
-                <td class="shift-cell" rowspan="${timeSlots.length}">${shift}班\n(${timeRange})</td>
-            `);
+            let headerCells = '';
+            if (includeDateCell) {
+                // A班包含日期单元格，合并50行（A/B两班各25行）
+                headerCells += `<td class="date-cell" rowspan="50">${dateInfo.label}</td>`;
+            }
+            headerCells += `<td class="shift-cell ${shift === 'B' ? 'b-shift' : ''}" rowspan="25">${shift}班<br>(${timeRange})</td>`;
+        
+            rows.push(`<tr class="shift-header-row">${headerCells}</tr>`);
 
             // 为每个时间段创建独立行
-            timeSlots.forEach((slot, index) => {
+            // 假设传入全局索引 offsetIndex 作为班次起始索引
+            const offsetIndex = dateIndex * 48 + (shift === 'A' ? 0 : 24);
+            timeSlots.forEach((slot, localIndex) => {
                 // 第一行需要添加开始标签
-                const rowStart = index === 0 ? '</tr>' : '';
+                const rowStart = localIndex === 0 ? '</tr>' : '';
                 rows.push(`${rowStart}
                 <tr class="time-slot-row">
                     <td class="time-slot">${slot}</td>
@@ -131,7 +157,7 @@
                          data-date="${dateInfo.date}" 
                          data-shift="${shift}" 
                          data-time-slot="${slot}" 
-                         data-slot-index="${index}"></td> <!-- 添加索引标识 -->
+                         data-slot-index="${offsetIndex + localIndex}"></td> <!-- 添加索引标识 -->
                 </tr>`);
             });
 
@@ -187,6 +213,9 @@
                 ghostClass: 'order-ghost',
                 // 添加从班次拖回工单池的处理
                 onAdd: function (evt) {
+
+                    // console.log("拖动1"+ evt);
+
                     if (evt.from !== evt.to) { // 确保是从外部拖入工单池
                         const orderNo = evt.item.dataset.orderNo;
                         // 调用取消排产API
@@ -202,6 +231,7 @@
                                     evt.item.remove(); // 从DOM中移除元素
                                 } else {
                                     // 拖拽成功后刷新页面
+                                    // alert("刷新？")
                                     location.reload();
                                 }
                             });
@@ -215,12 +245,46 @@
                     group: 'shared',
                     animation: 150,
                     onAdd: function (evt) {
+
+                        // console.log("拖动2"+ evt);
+                        
                         const orderNo = evt.item.dataset.orderNo;
                         const date = evt.to.dataset.date;
                         const shift = evt.to.dataset.shift;
                         // 自动获取拖入单元格的时间，不再需要手动输入
                         const startTime = evt.to.dataset.timeSlot;
+                        const orderDuration = parseFloat(evt.item.dataset.gsxs); // 获取工单工时
+                        const currentSlotIndex = parseInt(evt.to.dataset.slotIndex);
+                        const slotsToMerge = Math.ceil(orderDuration * 2); // 计算需要合并的单元格数量
 
+                        // 1. 冲突检测
+                        let hasConflict = false;
+                        console.log("gsxs："+ evt.item.dataset.gsxs);
+                        for (let i = 0; i < slotsToMerge; i++) {
+                            console.log("冲突检测："+currentSlotIndex + i)
+                            const checkSlotIndex = currentSlotIndex + i;
+                            // 查找同日期同班次下的目标时间段单元格
+                            const checkSlot = document.querySelector(`.shift-order-slot[data-slot-index="${checkSlotIndex}"]`);
+
+                            // 检查条件：单元格存在且已包含工单
+                            if (checkSlot.children.length > 0) {
+                                console.log(checkSlotIndex + ": "+ checkSlot.children[0].dataset.orderNo);
+                                if ( checkSlot.children[0].dataset.orderNo !== orderNo || checkSlot.children.length > 1) {
+                                    hasConflict = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        // 2. 处理冲突情况
+                        if (hasConflict) {
+                            alert('目标时间段存在冲突工单，请选择其他时间段！');
+                            // 将工单移回原位置
+                            evt.from.appendChild(evt.item);
+                            return; // 终止后续操作
+                        }
+
+                        // 3. 无冲突时继续排产流程
                         if (startTime) {
                             // 调用排产API
                             fetch('/api/schedule', {
@@ -239,7 +303,7 @@
                                         alert('排产失败: ' + data.message);
                                         evt.item.remove();
                                     } else {
-                                        // 拖拽成功后刷新页面
+                                        // alert("刷新？222")
                                         location.reload();
                                     }
                                 });
@@ -280,7 +344,7 @@
         // 根据工时计算工单高度
         function calculateOrderHeight(hours) {
             // 每个时间段行高40px，每0.5小时对应一个时间段高度
-            const baseHeight = 40; // 基础高度（半小时）
+            const baseHeight = 30; // 基础高度（半小时）
             return `${baseHeight * (hours / 0.5)}px`;
         }
 
@@ -303,7 +367,7 @@
                     // 2. 隐藏后续单元格（合并视觉效果）
                     for (let i = 1; i < slotsToMerge; i++) {
                         const nextSlotIndex = currentSlotIndex + i;
-                        const nextSlot = document.querySelector(`.shift-order-slot[data-date="${orderDate}"][data-shift="${shift}"][data-slot-index="${nextSlotIndex}"]`);
+                        const nextSlot = document.querySelector(`.shift-order-slot[data-slot-index="${nextSlotIndex}"]`);
                         if (nextSlot) {
                             nextSlot.style.display = 'none'; // 隐藏后续单元格
                         }
@@ -313,6 +377,7 @@
                     const orderElement = document.createElement('div');
                     orderElement.className = 'order-item';
                     orderElement.dataset.orderNo = orderNo;
+                    orderElement.dataset.gsxs = orderDuration;
                     orderElement.style.height = calculateOrderHeight(orderDuration);
                     orderElement.style.width = '100%';
                     orderElement.style.position = 'absolute';
