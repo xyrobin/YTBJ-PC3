@@ -1,25 +1,8 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>工单查询与编辑</title>
-    <link rel="stylesheet" href="/static/style.css">
-    <style>
-        .editable { border: 1px solid #ddd; padding: 4px; }
-        .non-editable { background-color: #f9f9f9; padding: 4px; }
-        .table-container { overflow-x: auto; margin: 20px; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
-        .action-btn { margin: 0 5px; padding: 5px 10px; cursor: pointer; }
-        .save-btn { background-color: #4CAF50; color: white; border: none; }
-        .cancel-btn { background-color: #f44336; color: white; border: none; }
-        /* 添加空值高亮样式 */
-        .empty-value { background-color: #fff3cd; border: 2px solid #ffeeba; }
-    </style>
-</head>
-<body>
+{% extends "base.html" %}
+
+{% block title %}数据查询{% endblock %}
+
+{% block content %}
     <div class="container">
         <!-- <h1>工单查询与编辑</h1> -->
         <div class="table-container">
@@ -45,7 +28,19 @@
             </table>
         </div>
     </div>
-
+<style>
+        .editable { border: 1px solid #ddd; padding: 4px; }
+        .non-editable { background-color: #f9f9f9; padding: 4px; }
+        .table-container { overflow-x: auto; margin: 20px; width: 100%;}
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .action-btn { margin: 0 5px; padding: 5px 10px; cursor: pointer; }
+        .save-btn { background-color: #4CAF50; color: white; border: none; }
+        .cancel-btn { background-color: #f44336; color: white; border: none; }
+        /* 添加空值高亮样式 */
+        .empty-value { background-color: #fff3cd; border: 2px solid #ffeeba; }
+    </style>
     <script>
         // 页面加载时获取所有工单数据
         document.addEventListener('DOMContentLoaded', () => {
@@ -112,5 +107,4 @@
             .catch(error => console.error('Error saving order:', error));
         }
     </script>
-</body>
-</html>
+{% endblock %}

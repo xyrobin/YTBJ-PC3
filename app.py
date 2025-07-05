@@ -61,5 +61,9 @@ def update_order():
     result = ProductionOrderService().update_order(data)
     return jsonify(result)
 
+@app.route('/upload')
+def upload():
+    return render_template('upload.html')  # 需要创建对应的模板
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True,port=5003)

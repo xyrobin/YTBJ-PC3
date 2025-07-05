@@ -1,15 +1,10 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>生产排产系统</title>
-    <link rel="stylesheet" href="/static/style.css">
-    <script src="static/Sortable.js"></script>
-</head>
+{% block title %}首页{% endblock %}
 
-<body>
+{% block content %}
+
+
     <div class="container">
         <!-- 左侧工单池 -->
         <div class="order-pool" id="orderPool">
@@ -407,6 +402,4 @@
             return Math.floor(offsetMinutes / 30); // 每30分钟一个时间段
         }
     </script>
-</body>
-
-</html>
+{% endblock %}
