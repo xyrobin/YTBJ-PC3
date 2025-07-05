@@ -1,1 +1,1 @@
-conn_str = 'oa/oa@1068O@192.168.0.100:1521/orcl'
+conn_str = 'RPA/rpa@1068R@192.168.0.100:1521/maindb'

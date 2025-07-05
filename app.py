@@ -43,5 +43,23 @@ def unschedule_order():
     result = ProductionOrderService().unschedule_order(order_no)
     return jsonify(result)
 
+@app.route('/query')
+def query_page():
+    return render_template('query.html')
+
+# 添加API路由用于获取所有工单数据
+@app.route('/api/all_orders')
+def get_all_orders():
+    service = ProductionOrderService()
+    orders = service.get_all_orders()
+    return jsonify(orders)
+
+# 添加API路由用于保存编辑后的数据
+@app.route('/api/update_order', methods=['POST'])
+def update_order():
+    data = request.json
+    result = ProductionOrderService().update_order(data)
+    return jsonify(result)
+
 if __name__ == '__main__':
     app.run(debug=True)

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工单查询与编辑</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .editable { border: 1px solid #ddd; padding: 4px; }
+        .non-editable { background-color: #f9f9f9; padding: 4px; }
+        .table-container { overflow-x: auto; margin: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .action-btn { margin: 0 5px; padding: 5px 10px; cursor: pointer; }
+        .save-btn { background-color: #4CAF50; color: white; border: none; }
+        .cancel-btn { background-color: #f44336; color: white; border: none; }
+        /* 添加空值高亮样式 */
+        .empty-value { background-color: #fff3cd; border: 2px solid #ffeeba; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- <h1>工单查询与编辑</h1> -->
+        <div class="table-container">
+            <table id="orderTable">
+                <thead>
+                    <tr>
+                        <th>生产工单号</th>
+                        <th>交货日期</th>
+                        <th>交货时间</th>
+                        <th>业务员</th>
+                        <th>原料库位</th>
+                        <th>工时(小时)</th>
+                        <th>计划开始日期</th>
+                        <th>计划开始时间</th>
+                        <th>班次</th>
+                        <th>最早开始日期</th>
+                        <th>最早开始时间</th>
+                        <th>工单计划状态</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="orderTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // 页面加载时获取所有工单数据
+        document.addEventListener('DOMContentLoaded', () => {
+            fetch('/api/all_orders')
+                .then(response => response.json())
+                .then(orders => renderOrders(orders))
+                .catch(error => console.error('Error loading orders:', error));
+        });
+
+        // 渲染工单表格
+        function renderOrders(orders) {
+            const tableBody = document.getElementById('orderTableBody');
+            tableBody.innerHTML = '';
+
+            orders.forEach(order => {
+                const row = document.createElement('tr');
+                // 判断交货日期是否为空，为空则添加empty-value类
+                const jhrqClass = order.jhrq ? 'editable' : 'editable empty-value';
+                row.innerHTML = `
+                    <td class="non-editable">${order.scgdh}</td>
+                    <td><input type="date" class="${jhrqClass}" data-field="jhrq" value="${order.jhrq || ''}"></td>
+                    <td><input type="time" class="editable" data-field="jhsj" value="${order.jhsj || ''}"></td>
+                    <td class="non-editable">${order.ywy || ''}</td>
+                    <td class="non-editable">${order.ylkw || ''}</td>
+                    <td class="non-editable">${order.gsxs || ''}</td>
+                    <td class="non-editable">${order.jhksrq || ''}</td>
+                    <td class="non-editable">${order.jhkssj || ''}</td>
+                    <td class="non-editable">${order.bc || ''}</td>
+                    <td><input type="date" class="editable" data-field="zzscrq" value="${order.zzscrq || ''}"></td>
+                    <td><input type="time" class="editable" data-field="zzscsj" value="${order.zzscsj || ''}"></td>
+                    <td class="non-editable">${order.gdjhzt || ''}</td>
+                    <td>
+                        <button class="action-btn save-btn" onclick="saveOrder('${order.scgdh}', this)">保存</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        // 保存订单修改
+        function saveOrder(scgdh, button) {
+            const row = button.closest('tr');
+            const orderData = {
+                scgdh: scgdh,
+                jhrq: row.querySelector('[data-field="jhrq"]').value,
+                jhsj: row.querySelector('[data-field="jhsj"]').value,
+                zzscrq: row.querySelector('[data-field="zzscrq"]').value,
+                zzscsj: row.querySelector('[data-field="zzscsj"]').value
+            };
+
+            fetch('/api/update_order', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(orderData)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    alert('保存成功！');
+                } else {
+                    alert('保存失败: ' + result.message);
+                }
+            })
+            .catch(error => console.error('Error saving order:', error));
+        }
+    </script>
+</body>
+</html>

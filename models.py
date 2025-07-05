@@ -15,8 +15,6 @@ class ProductionOrderService:
          a.GSXS,
          a.JHKSRQ,
          a.JHKSSJ,
-         a.JHJSRQ,
-         a.JHJSSJ,
          a.BC,
          a.ZZSCRQ,
          a.ZZSCSJ,
@@ -26,7 +24,7 @@ class ProductionOrderService:
          b.PH     PH,
          b.gg     GG,
          b.JHZS   SL
-    FROM uf_SCGDWH a
+    FROM A_PC_SCGDWH_TAB a
     left join A_PC_DPCSCGD_VW b
       on a.scgdh = b.SCGDH
    WHERE a.GDJHZT = 0
@@ -39,7 +37,7 @@ class ProductionOrderService:
         # 获取所有已排产工单（状态=1）
         query = """
         SELECT SCGDH, GSXS, JHKSRQ, JHKSSJ 
-        FROM uf_SCGDWH 
+        FROM A_PC_SCGDWH_TAB 
         WHERE GDJHZT = 1
         """
         self.cursor.execute(query)
@@ -55,7 +53,7 @@ class ProductionOrderService:
 
             # 更新工单状态和排产信息
             update_sql = """
-            UPDATE uf_SCGDWH
+            UPDATE A_PC_SCGDWH_TAB
             SET GDJHZT = 1, JHKSRQ = :plan_date, BC = :shift, JHKSSJ = :start_time
             WHERE SCGDH = :order_no
             """
@@ -78,11 +76,46 @@ class ProductionOrderService:
         # """取消排产，将工单状态改回待排产"""
         try:
             update_sql = """
-            UPDATE uf_SCGDWH
+            UPDATE A_PC_SCGDWH_TAB
             SET GDJHZT = 0, JHKSRQ = NULL, BC = NULL, JHKSSJ = NULL
             WHERE SCGDH = :order_no
             """
             self.cursor.execute(update_sql, {"order_no": order_no})
+            self.connection.commit()
+            return {"success": True}
+        except Exception as e:
+            self.connection.rollback()
+            return {"success": False, "message": str(e)}
+
+    def get_all_orders(self):
+        # 获取所有工单数据
+        query = """
+        SELECT SCGDH, JHRQ, JHSJ, YWY, YLKW, GSXS, JHKSRQ, JHKSSJ, BC, ZZSCRQ, ZZSCSJ, GDJHZT
+        FROM A_PC_SCGDWH_TAB
+        ORDER BY SCGDH
+        """
+        self.cursor.execute(query)
+        columns = [col[0].lower() for col in self.cursor.description]
+        return [dict(zip(columns, row)) for row in self.cursor.fetchall()]
+
+    def update_order(self, order_data):
+        # 更新工单数据
+        try:
+            update_sql = """
+            UPDATE A_PC_SCGDWH_TAB
+            SET JHRQ = :jhrq, JHSJ = :jhsj, ZZSCRQ = :zzscrq, ZZSCSJ = :zzscsj
+            WHERE SCGDH = :scgdh
+            """
+            self.cursor.execute(
+                update_sql,
+                {
+                    "jhrq": order_data.get('jhrq'),
+                    "jhsj": order_data.get('jhsj'),
+                    "zzscrq": order_data.get('zzscrq'),
+                    "zzscsj": order_data.get('zzscsj'),
+                    "scgdh": order_data.get('scgdh')
+                },
+            )
             self.connection.commit()
             return {"success": True}
         except Exception as e:
