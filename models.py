@@ -11,23 +11,37 @@ class ProductionOrderService:
     def get_pending_orders(self):
         # 排产-获取所有待排产工单（状态=待排产）并按最早生产日期升序排序
         query = """
-          SELECT a.SCGDH,
-                a.GSXS,
-                a.JHKSRQ,
-                a.JHKSSJ,
-                a.BC,
-                a.ZZSCRQ,
-                a.ZZSCSJ,
-                a.JHRQ,
-                a.JHSJ,
-                b.KHMC,
-                b.PH     PH,
-                b.gg     GG,
-                b.JHZS   SL
-            FROM A_PC_SCGDWH_TAB a
-            left join A_PC_DPCSCGD_VW b
-            on a.scgdh = b.SCGDH
-        WHERE a.GDJHZT = '待排产' and b.GXDL = 'BL'
+            SELECT a.SCGDH,
+                    a.GSXS,
+                    a.JHKSRQ,
+                    a.JHKSSJ,
+                    a.BC,
+                    a.ZZSCRQ,
+                    a.ZZSCSJ,
+                    nvl(a.JHRQ, a.GDJHQ) JHRQ,
+                    a.JHSJ,
+                    a.gy GY,
+                    decode(a.gy, '摆剪', '摆', '落料', '落', '弧形料R2000', 'R2', '弧形料R3000', 'R3', ' ') GYSX,
+                    a.bm BM,
+                    decode(a.bm, '内板', '内', '外板', '外', ' ') BMSX,
+                    a.pzdl PZDL,
+                    decode(a.pzdl, '冷轧', '冷', '镀锌', '锌', '酸洗', '酸', '铝硅', '硅', ' ') PZDLSX,
+                    a.sdgx SDGX,
+                    a.xdgx XDGX,
+                    a.ywy YWY,
+                    a.ylkw YLKW,
+                    b.bz BZ,
+                    b.tlzs TLZS,
+                    b.tlzl TLZL,
+                    b.KHMC,
+                    b.PH PH,
+                    b.gg GG,
+                    b.JHZS SL
+                FROM A_PC_SCGDWH_TAB a
+                left join A_PC_DPCSCGD_VW b
+                    on a.scgdh = b.SCGDH
+                WHERE a.GDJHZT = '待排产'
+                and b.GXDL = 'BL'
         """
         self.cursor.execute(query)
         columns = [col[0].lower() for col in self.cursor.description]
@@ -36,23 +50,37 @@ class ProductionOrderService:
     def get_scheduled_orders(self):
         # 排产-获取所有已排产工单（状态=已排产）
         query = """
-        SELECT a.SCGDH,
-                a.GSXS,
-                a.JHKSRQ,
-                a.JHKSSJ,
-                a.BC,
-                a.ZZSCRQ,
-                a.ZZSCSJ,
-                a.JHRQ,
-                a.JHSJ,
-                b.KHMC,
-                b.PH     PH,
-                b.gg     GG,
-                b.JHZS   SL
-            FROM A_PC_SCGDWH_TAB a
-            left join A_PC_DPCSCGD_VW b
-            on a.scgdh = b.SCGDH
-        WHERE a.GDJHZT = '已排产' and b.GXDL = 'BL'
+            SELECT a.SCGDH,
+                    a.GSXS,
+                    a.JHKSRQ,
+                    a.JHKSSJ,
+                    a.BC,
+                    a.ZZSCRQ,
+                    a.ZZSCSJ,
+                    nvl(a.JHRQ, a.GDJHQ) JHRQ,
+                    a.JHSJ,
+                    a.gy GY,
+                    decode(a.gy, '摆剪', '摆', '落料', '落', '弧形料R2000', 'R2', '弧形料R3000', 'R3', ' ') GYSX,
+                    a.bm BM,
+                    decode(a.bm, '内板', '内', '外板', '外', ' ') BMSX,
+                    a.pzdl PZDL,
+                    decode(a.pzdl, '冷轧', '冷', '镀锌', '锌', '酸洗', '酸', '铝硅', '硅', ' ') PZDLSX,
+                    a.sdgx SDGX,
+                    a.xdgx XDGX,
+                    a.ywy YWY,
+                    a.ylkw YLKW,
+                    b.bz BZ,
+                    b.tlzs TLZS,
+                    b.tlzl TLZL,
+                    b.KHMC,
+                    b.PH PH,
+                    b.gg GG,
+                    b.JHZS SL
+                FROM A_PC_SCGDWH_TAB a
+                left join A_PC_DPCSCGD_VW b
+                    on a.scgdh = b.SCGDH
+                WHERE a.GDJHZT = '已排产'
+                and b.GXDL = 'BL'
         """
         self.cursor.execute(query)
         columns = [col[0].lower() for col in self.cursor.description]
@@ -102,11 +130,15 @@ class ProductionOrderService:
             return {"success": False, "message": str(e)}
 
     def get_all_orders(self):
-        # 排产-获取所有工单数据
+        # 工单维护-获取所有工单数据
         query = """
-        SELECT SCGDH, JHRQ, JHSJ, YWY, YLKW, GSXS, JHKSRQ, JHKSSJ, BC, ZZSCRQ, ZZSCSJ, GDJHZT
-        FROM A_PC_SCGDWH_TAB where and GXDL = 'BL'
-        ORDER BY SCGDH
+        SELECT a.SCGDH, nvl(a.JHRQ, a.GDJHQ) JHRQ, JHSJ, YWY, YLKW, GSXS, JHKSRQ, JHKSSJ, BC, ZZSCRQ, ZZSCSJ, GDJHZT
+            FROM A_PC_SCGDWH_TAB a
+            left join A_RG_PRODUCTION_BILL_INTEGRATED_TAB b
+                on a.scgdh = b.scgdh
+            where b.gxdl = 'BL'
+            and a.scgdh is not null
+            ORDER BY SCGDH
         """
         self.cursor.execute(query)
         columns = [col[0].lower() for col in self.cursor.description]

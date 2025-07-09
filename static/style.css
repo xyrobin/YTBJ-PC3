@@ -57,6 +57,10 @@ body {
     color: #333;
 }
 
+.order-details {
+    color: #666;
+}
+
 /* 排产区域样式 */
 .scheduling-area {
     width: 50%;
@@ -113,7 +117,7 @@ body {
 .schedule-table td {
     border: 1px solid #ddd;
     padding: 0;
-    text-align: center;
+    /* text-align: center; */
 }
 
 .schedule-table th {
@@ -123,6 +127,10 @@ body {
     position: sticky;
     top: 0;
     z-index: 1;
+}
+
+.schedule-table thead tr {
+    height: 20px;
 }
 
 .schedule-table tr:nth-child(even) {
@@ -197,15 +205,15 @@ body {
 }
 
 .schedule-table th {
-    padding: 12px 8px;
+    padding: 2px 8px;
     text-align: center;
 }
 
 /* 表格容器滚动优化 */
 .shift-container {
-    max-height: 950px;
+    /* max-height: 950px; */
     overflow-y: auto;
-    margin-top: 15px;
+    margin-top: 0;
 }
 
 /* 时间槽和工单区域样式调整 */
@@ -225,7 +233,7 @@ body {
 
 /* 时间段和工单行高对齐 */
 .time-slot-row {
-    height: 30px;
+    height: 25px;
     /* 固定行高，确保对齐 */
 }
 
@@ -254,6 +262,7 @@ body {
     align-items: center;
     justify-content: center;
     border-bottom: 1px solid #eee;
+    text-align: center;
 }
 
 /* 确保表格行高一致 */
@@ -378,6 +387,123 @@ body {
         display: none;
     }
 }
+
+/* 全局缩放80% */
+html {
+    font-size: 90%;
+    /* transform: scale(0.9); */
+    /* transform-origin: top left;
+    width: 100%;
+    height: 100%;  */
+}
+
+/* body {
+    width: 100vw;
+    height: 100vh;
+    transform: scale(0.9);
+    transform-origin: top left;
+} */
+
+/* 修复导航栏定位 */
+/* .navbar {
+    transform: scale(1.25);
+    transform-origin: top left;
+    width: 90%;
+} */
+.process-tooltip {
+    display: none;
+    position: absolute;
+    bottom: -125%;
+    width: 60%;
+    left: 40%;
+    background: rgba(0,0,0,0.6);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    white-space: normal;
+    z-index: 9999;
+    padding: 12px 16px;
+    
+}
+
+.process-tooltip p {
+    margin: 4px 0;
+    line-height: 1.5;
+    word-wrap: break-word;
+}
+
+.order-item:hover .process-tooltip {
+    display: block;
+    z-index: 9999;
+    overflow: visible;
+}
+
+.order-item {
+    position: relative;
+    overflow: visible;
+    height: 80px;
+    z-index: 1;
+}
+
+.order-item:hover {
+    z-index: 2;
+}
+
+.order-tags {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    display: flex;
+    gap: 3px;
+}
+
+
+
+/* 通用标签样式 */
+.tag {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.85em;
+    margin: 2px;
+    display: inline-block;
+
+    font-size: 12px;
+    padding: 2px 5px;
+    border-radius: 3px;
+    background: #e0e0e0;
+    color: #e0e0e0;
+    width: 22px;
+    height: 22px;
+    text-align: center;
+}
+
+/* 工艺类型标签 */
+.technical-摆 { background: #FF9800; color: white; }
+.technical-落 { background: #2196F3; color: white; }
+.technical-R2 { background: #4CAF50; color: black; }
+.technical-R3 { background: #16691d; color: white; }
+
+/* 品种类型标签 */
+.variety-冷 { background: #3F51B5; color: white; }
+.variety-锌 { background: #E91E63; color: white; }
+.variety-酸 { background: #FF5722; color: white; }
+.variety-硅 { background: #009688; color: white; }
+
+.prev-process.active {
+    background: #f36bba;color: white;
+}
+
+.next-process.active {
+    background: #55abf1;color: white;
+}
+
+/* .variety {
+    background: #9C27B0;
+}
+
+.technical{
+    background: #a4a715;
+} */
 
 
 

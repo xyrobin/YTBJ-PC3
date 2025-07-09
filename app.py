@@ -7,8 +7,12 @@ app = Flask(__name__)
 
 # 首页路由
 @app.route('/')
-def index():
+def new_index():
     return render_template('index.html')
+
+@app.route('/schedule')
+def schedule_page():
+    return render_template('schedule.html')
 
 # 获取待排产工单
 @app.route('/api/orders')
