@@ -74,9 +74,17 @@
                     <td class="non-editable">${order.gdjhzt || ''}</td>
                     <td>
                         <button class="action-btn save-btn" onclick="saveOrder('${order.scgdh}', this)">保存</button>
+                        <button class="detail-btn" onclick="window.open('/order?no=${order.scgdh}', '_blank')">详情</button>
                     </td>
                 `;
                 tableBody.appendChild(row);
+
+                // 添加时间校验事件监听
+                const timeInputs = row.querySelectorAll('input[type="time"]');
+                timeInputs.forEach(input => {
+                    // input.addEventListener('input', validateTimeInput);
+                    input.addEventListener('blur', validateTimeInput);
+                });
             });
         }
 
@@ -105,6 +113,29 @@
                 }
             })
             .catch(error => console.error('Error saving order:', error));
+        }
+
+        // 时间输入校验函数（限制分钟为00或30）
+        function validateTimeInput(e) {
+            const input = e.target;
+            const timeValue = input.value;
+            if (!timeValue) return;
+
+            const [hours, minutes] = timeValue.split(':').map(Number);
+            let adjustedMinutes, adjustedHours = hours;
+
+            // 校验并修正分钟
+            if (minutes !== 0 && minutes !== 30) {
+                // 四舍五入到最近的00或30分钟
+                adjustedMinutes = minutes < 15 ? 0 : minutes < 45 ? 30 : 0;
+                // 处理小时进位
+                if (adjustedMinutes === 0 && minutes >= 45) adjustedHours = (hours + 1) % 24;
+
+                // 格式化时间字符串
+                const formattedTime = `${adjustedHours.toString().padStart(2, '0')}:${adjustedMinutes.toString().padStart(2, '0')}`;
+                input.value = formattedTime;
+                alert('分钟只能输入00或30，已自动修正为' + formattedTime);
+            }
         }
     </script>
 {% endblock %}

@@ -331,28 +331,6 @@
         return date.toISOString().split('T')[0];
     }
 
-    // 创建时间段和工单的对应关系
-    // function createTimeSlotAndOrderGrid(dateInfo, shift, startTime, endTime) {
-    //     const rows = [];
-    //     // 生成时间段和对应的工单区域
-    //     for (let i = 0; i < 24; i++) { // 每个班次12小时，每半小时一个时间段，共24个时间段
-    //         const hour = Math.floor(i / 2);
-    //         const minute = (i % 2) * 30;
-    //         const timeSlot = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-    //         const timeSlotId = `${dateInfo.date}-${shift}-${i}`;
-
-    //         // 创建时间段行
-    //         rows.push(`
-    //             <tr class="time-slot-row">
-    //                 <td class="date-cell" rowspan="1"></td>
-    //                 <td class="shift-cell" rowspan="1"></td>
-    //                 <td class="time-slot">${timeSlot}</td>
-    //                 <td class="shift-order-slot" data-time-slot="${timeSlotId}"></td>
-    //             </tr>
-    //         `);
-    //     }
-    //     return rows.join('');
-    // }
 
     // 根据工时计算工单高度
     function calculateOrderHeight(hours) {
@@ -415,25 +393,6 @@
                          <p>备注：${order.bz}</p>
                      </div>
                     `;
-                // orderElement.innerHTML = `
-                //         <div class="order-header">${orderNo} - 工时: ${order.gsxs}小时 - 交货期：${order.jhrq} ${order.jhsj} - 最早生产时间：${order.zzscrq} ${order.zzscsj} </div>
-                //     <div class="order-details">
-                //         <p>客户：【${order.khmc}】 规格：【${order.gg}】 成品数量：【${order.sl}】 </p>
-                //         <p>上道工序：【${order.sdgx}】 - 下道工序：【${order.xdgx}】 </p>
-                //     </div>
-                //     <div class="order-tags">
-                //         <span class="tag technical-${technical}">${technical}</span>
-                //         <span class="tag variety-${variety}">${variety}</span>
-                //         <span class="tag prev-process ${prevProcessClass}">上</span>
-                //         <span class="tag next-process ${nextProcessClass}">下</span>
-                //     </div>
-                //     <div class="process-tooltip">
-                //         <p>工艺详情：${order.gy}/${order.bm}/${order.pzdl}</p>
-                //         <p>负责人：${order.ywy}</p>
-                //         <p>原料张数/重量：${order.tlzs}/${order.tlzl}</p>
-                //         <p>备注：【${order.bz}】</p>
-                //     </div>
-                //     `;
                 targetSlot.appendChild(orderElement);
             }
         });

@@ -173,3 +173,50 @@ class ProductionOrderService:
             self.cursor.close()
         if hasattr(self, "connection") and self.connection:
             self.connection.close()
+
+
+    def get_order_details(self, order_no):
+        #工单详情页查询
+        sql = """
+            select t.scgdh scgdh,
+                   nvl(jgdwdm, '厂内') jgdw,
+                   t.jzmc jzmc,
+                   t.gxdlmc gxdl,
+                   t.ph ph,
+                   t.pzfzmms pzmc,
+                   t.qgggms gg,
+                   a.pzdl pzdl,
+                   a.gy gy,
+                   a.bm bm,
+                   t.sdjhh sdgx,
+                   t.xdjhh xdgx,
+                   a.ylkw ylkw,
+                   t.jhtlsl ylzs,
+                   t.jhtll ylzl,
+                   t.jhyjzs cpzs,
+                   a.gsxs gs,
+                   t.khmc khmc,
+                   a.ywy ywy,
+                   a.gdjhq gdjhq,
+                   nvl(a.JHRQ, a.GDJHQ) jhrq,
+                   a.jhsj jhsj,
+                   nvl(a.zzscrq, TO_CHAR(TO_DATE(t.cjsj, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD')) zzscrq,
+                   a.zzscsj zzscsj,
+                   a.gdjhzt gdjhzt,
+                   a.jhksrq jhksrq,
+                   a.jhkssj jhkssj,
+                   a.bc bc,
+                   t.scxqdh scxqdh,
+                   t.scxqdzxh scxqdzxh,
+                   t.xsddh xsddh,
+                   t.xsddzxh xsddzxh,
+                   t.bz bz
+              from A_RG_PRODUCTION_BILL_INTEGRATED_TAB t
+              left join A_PC_SCGDWH_TAB a
+                on t.scgdh = a.scgdh
+             where t.scgdh = :order_no
+        """
+        # return self.cursor.execute(sql, (order_no,)).fetchone()
+        self.cursor.execute(sql, {'ORDER_NO': order_no})
+        columns = [col[0].lower() for col in self.cursor.description]
+        return [dict(zip(columns, row)) for row in self.cursor.fetchall()]

@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="order-detail-container">
+    <h2 style="margin: 10px;">生产工单详情：<span class="scgdh"></span></h2>
+
+    <div class="detail-card">
+        <!-- 基础信息区块 -->
+        <div class="detail-section">
+            <h3>📋 工单概览 </h3>
+            <div class="detail-grid">
+                <div class="grid-item">
+                    <label>客户名称：</label>
+                    <span class="value khmc"></span>
+                </div>
+                <div class="grid-item">
+                    <label>计划状态：</label>
+                    <!-- 修改HTML部分（第18行） -->
+                    <span class="status gdjhzt"></span>
+                </div>
+                <div class="grid-item">
+                    <label>业务员：</label>
+                    <span class="value ywy"></span>
+                </div>
+                <div class="grid-item">
+                    <label>加工单位：</label>
+                    <span class="value jgdw"></span>
+                </div>
+                <div class="grid-item">
+                    <label>机组名称：</label>
+                    <span class="value jzmc"></span>
+                </div>
+                <div class="grid-item">
+                    <label>交货期：</label>
+                    <span class="value jhrq"></span>
+                </div>
+                <div class="grid-item">
+                    <label>计划开始时间：</label>
+                    <span class="value jhksrq"></span>
+                    <span class="value jhkssj"></span>
+                </div>
+                <div class="grid-item">
+                    <label>班次：</label>
+                    <span class="value bc"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 时间信息区块 -->
+        <div class="detail-section">
+            <h3>⏰ 时间节点</h3>
+            <div class="timeline">
+                <div class="timeline-item sdgx-off">
+                    <label>上道工序：</label>
+                    <span class="value sdgx"></span>
+                </div>
+                <div class="timeline-item">
+                    <label>最早生产时间：</label>
+                    <span class="value zzscrq"></span>
+                    <span class="value zzscsj"></span>
+                </div>
+                <div class="timeline-item">
+                    <label>计划生产时间：</label>
+                    <span class="value jhksrq"></span>
+                    <span class="value jhkssj"></span>
+                    <!-- 添加提醒容器 -->
+                    <span class="time-warning"></span>
+                </div>
+                <div class="timeline-item">
+                    <label>交货时间：</label>
+                    <span class="value jhrq"></span>
+                    <span class="value jhsj"></span>
+                </div>
+                <div class="timeline-item xdgx-off">
+                    <label>下道工序：</label>
+                    <span class="value xdgx"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 原料信息区块 -->
+        <div class="detail-section">
+            <h3>📦 原料信息</h3>
+            <div class="material-info">
+                <div class="info-item">
+                    <span class="label">原料库位：</span>
+                    <span class="value">{{ order.原料库位 }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">原料张数：</span>
+                    <span class="value">{{ order.原料张数 }}</span>
+                </div>
+                <!-- 其他原料字段 -->
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    window.onload = function () {
+        const urlParams = new URLSearchParams(window.location.search);
+        const orderNo = urlParams.get('no');
+        console.log(orderNo);
+        // 在数据加载完成后执行时间校验
+
+
+        // 在fetch成功回调中调用校验函数
+        fetch(`/api/order/${orderNo}`)
+            .then(response => response.json())
+            .then(data => {
+                console.log(data)
+                // console.log('获取到的订单数据:', data[0], '其中khmc字段值为:', data[0].khmc?data[0].khmc:'无');
+                const order = data && data.length > 0 ? data[0] : null;
+                console.log('订单数据:', order);
+                if (!order) {
+                    document.getElementById('error-message').textContent = '未找到订单数据';
+                    return;
+                }
+
+                // 向页面写入数据
+                function setText(className, value) {
+                    // 使用class选择器获取所有匹配元素
+                    const elements = document.getElementsByClassName(className);
+                    // 遍历所有匹配元素并设置内容
+                    Array.from(elements).forEach(element => {
+                        element.innerText = value || '';
+                    });
+                }
+
+                // 在数据绑定部分添加日期时间拆分逻辑
+                Object.keys(order).forEach(key => {
+                    // 处理日期时间字段（拆分日期和时间）
+                    if (['zzscrq', 'jhksrq', 'jhrq'].includes(key)) {
+                        // const dateTime = order[key].split(' ');
+                        // if (dateTime.length === 2) {
+                        //     setText(key, dateTime[0]); // 日期部分
+                        //     setText(key.replace('rq', 'sj'), dateTime[1]); // 时间部分（假设时间字段是rq替换为sj）
+                        // }
+                        setText(key, order[key]);
+                    } else {
+                        setText(key, order[key]);
+                    }
+                });
+
+
+                // 动态设置状态类名，控制显示样式
+                //工单排产状态
+                const statusElements = document.getElementsByClassName('gdjhzt');
+                Array.from(statusElements).forEach(statusElement => {
+                    if (order.gdjhzt) {
+                        statusElement.className = statusElement.className.replace(/status-\S+/g, '').trim();
+                        statusElement.classList.add(`status-${order.gdjhzt.replace(/\s+/g, '')}`);
+                    }
+                });
+                //上道工序
+                const sdgxElements = document.getElementsByClassName('sdgx-off');
+                Array.from(sdgxElements).forEach(sdgxElements => {
+                    if (order.sdgx) {
+                        sdgxElements.className = sdgxElements.className.replace(/sdgx-\S+/g, '').trim();
+                        sdgxElements.classList.add(`sdgx-on`);
+                    }
+                });
+                //下道工序
+                const xdgxElements = document.getElementsByClassName('xdgx-off');
+                Array.from(xdgxElements).forEach(xdgxElements => {
+                    if (order.xdgx) {
+                        xdgxElements.className = xdgxElements.className.replace(/xdgx-\S+/g, '').trim();
+                        xdgxElements.classList.add(`xdgx-on`);
+                    }
+                });
+
+                // 时间校验
+                validateProductionTime(order);
+            });
+
+        // 添加时间校验
+        // 修改解析函数以支持完整datetime字符串
+        function parseDateTime(dateStr,timeStr) {
+
+            if (!dateStr) return null;
+            timeStr = timeStr || '23:59:59';
+            // 直接解析完整的日期时间字符串
+            const dateTime = new Date(dateStr + ' ' + timeStr);
+            // 验证日期有效性
+            return isNaN(dateTime.getTime()) ? null : dateTime;
+        }
+
+        function validateProductionTime(order) {
+            // 获取时间元素
+            const planDateEl = document.getElementsByClassName('jhksrq')[0];
+            const planTimeEl = document.getElementsByClassName('jhkssj')[0];
+            const warningEl = document.getElementsByClassName('time-warning')[0];
+
+            // 修改：直接传入完整datetime字符串
+            const earliestDateTime = parseDateTime(order.zzscrq,order.zzscsj);
+            const planDateTime = parseDateTime(order.jhksrq,order.jhkssj);
+            const deliveryDateTime = parseDateTime(order.jhrq,order.jhsj);
+
+            // 添加调试日志
+            console.log('时间解析结果:', {
+                earliest: earliestDateTime,
+                plan: planDateTime,
+                delivery: deliveryDateTime
+            });
+
+            // 重置样式和警告
+            if (planDateEl && planTimeEl) {
+                planDateEl.classList.remove('time-invalid');
+                planTimeEl.classList.remove('time-invalid');
+            }
+            if (warningEl) warningEl.textContent = '';
+
+            // 时间校验逻辑
+            if (planDateTime && earliestDateTime && deliveryDateTime) {
+                if (planDateTime < earliestDateTime) {
+                    // 计划时间早于最早生产时间
+                    if (planDateEl && planTimeEl) {
+                        planDateEl.classList.add('time-invalid');
+                        planTimeEl.classList.add('time-invalid');
+                    }
+                    if (warningEl) warningEl.textContent = '计划生产时间早于最早开始时间，请注意';
+                } else if (planDateTime > deliveryDateTime) {
+                    // 计划时间晚于交货时间
+                    if (planDateEl && planTimeEl) {
+                        planDateEl.classList.add('time-invalid');
+                        planTimeEl.classList.add('time-invalid');
+                    }
+                    if (warningEl) warningEl.textContent = '计划生产时间晚于交货时间，请注意';
+                }
+            }
+        }
+
+    }
+</script>
+{% endblock %}

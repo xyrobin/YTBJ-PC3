@@ -3,13 +3,19 @@ from models import ProductionOrderService
 from datetime import datetime, timedelta
 import os
 
-app = Flask(__name__)
+from flask import Flask, jsonify
 
-# 首页路由
+app = Flask(__name__)
+# 添加JSON中文支持配置
+app.config['JSON_AS_ASCII'] = False  # 关键配置：禁用ASCII编码
+app.config['JSON_SORT_KEYS'] = False  # 可选：保持JSON键顺序与字典一致
+
+
 @app.route('/')
 def new_index():
     return render_template('index.html')
 
+#排产页
 @app.route('/schedule')
 def schedule_page():
     return render_template('schedule.html')
@@ -47,6 +53,7 @@ def unschedule_order():
     result = ProductionOrderService().unschedule_order(order_no)
     return jsonify(result)
 
+#查询页
 @app.route('/query')
 def query_page():
     return render_template('query.html')
@@ -69,5 +76,25 @@ def update_order():
 def upload():
     return render_template('upload.html')  # 需要创建对应的模板
 
+# 工单详情页
+@app.route('/order')
+def order_detail():
+    order_no = request.args.get('no')
+    if not order_no:
+        return "Order number is required", 400
+    print(order_no)
+    details = ProductionOrderService().get_order_details(order_no)
+    return render_template('order_detail.html', order=details)
+
+@app.route('/api/order/<order_no>')
+def order_data(order_no):
+    try:
+        details = ProductionOrderService().get_order_details(order_no)
+        if details:
+            return jsonify(details)  # 现在中文会正常显示
+        return jsonify({"error": "订单不存在"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
 if __name__ == '__main__':
     app.run(debug=True,port=5003)

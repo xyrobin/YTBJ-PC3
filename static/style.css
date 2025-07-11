@@ -497,13 +497,98 @@ html {
     background: #55abf1;color: white;
 }
 
-/* .variety {
-    background: #9C27B0;
+
+
+/**以下工单详情页*/
+.order-detail-container {
+    max-width: 1200px;
+    margin: 1rem auto;
 }
 
-.technical{
-    background: #a4a715;
-} */
+.detail-card {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    padding: 2rem;
+}
+
+.detail-section {
+    margin-bottom: 2rem;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 1.5rem;
+}
+
+.detail-section h3 {
+    color: #2c3e50;
+    margin-bottom: 1rem;
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+}
+
+.grid-item {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 6px;
+}
+
+.grid-item label {
+    color: #7f8c8d;
+    margin-bottom: 0.5rem;
+}
+
+/* 状态标签样式 */
+.status-已排产 { color: #27ae60; }
+.status-待排产 { color: #dfc928; }
+.status-异常 { color: #e74c3c; }
+
+.timeline {
+    border-left: 3px solid #3498db;
+    padding-left: 1.5rem;
+}
+
+.timeline-item {
+    margin-bottom: 1.5rem;
+    position: relative;
+}
+
+.timeline-item::before {
+    content: '●';
+    color: #3498db;
+    position: absolute;
+    left: -1.85rem;
+    top: -0.2rem;
+    font-size: 1.2rem;
+}
 
 
+.sdgx-off {
+    display: none;
+}
 
+.sdgx-on {
+    display: block;
+    background-color: #f8b762;
+}
+
+.xdgx-off {
+    display: none;
+}
+
+.xdgx-on {
+    display: block;
+    background-color: #affcf4;
+}
+
+.time-warning {
+    color: red;
+    font-weight: bold;
+    margin-left: 10px;
+}
+.time-invalid {
+    color: red;
+    font-weight: bold;
+}
