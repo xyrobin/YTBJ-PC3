@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
-{% block title %}首页{% endblock %}
+{% block title %}智慧排产中心-工单排产{% endblock %}
+
 
 {% block content %}
 
@@ -22,6 +23,21 @@
 </div>
 
 <script>
+    // 辅助函数：格式化日期为YYYY-MM-DD
+    function formatDate(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    // 辅助函数：根据工时计算工单高度
+    function calculateOrderHeight(hours) {
+        // 每个时间段行高40px，每0.5小时对应一个时间段高度
+        const baseHeight = 20; // 基础高度（半小时）
+        return `${baseHeight * (hours / 0.5)}px`;
+    }
+
     // 保存滚动位置到localStorage
     window.addEventListener('beforeunload', function () {
         const orderPool = document.getElementById('orderPool');
@@ -30,37 +46,21 @@
         if (shiftContainer) localStorage.setItem('shiftContainerScrollTop', shiftContainer.scrollTop);
     });
 
-    // 初始化拖拽功能
-    document.addEventListener('DOMContentLoaded', function () {
-        // 先初始化班次表格
-        initShiftTable();
+    // 辅助函数：根据时间确定班次
+    function getShiftFromTime(timeStr) {
+        const hour = parseInt(timeStr.split(':')[0]);
+        return hour >= 8 && hour < 20 ? 'A' : 'B';
+    }
 
-        // 加载工单数据
-        fetch('/api/orders')
-            .then(response => response.json())
-            .then(orders => {
-                renderOrderPool(orders);
-                // 在班次表格和工单数据都准备好后初始化拖拽
-                initDragAndDrop();
-            });
-        // 加载已排产工单
-        fetch('/api/scheduled_orders')
-            .then(response => response.json())
-            .then(scheduledOrders => {
-                renderScheduledOrders(scheduledOrders);
-            })
-            .finally(() => {
-                // 恢复滚动位置
-                const orderPoolScrollTop = localStorage.getItem('orderPoolScrollTop');
-                const shiftContainerScrollTop = localStorage.getItem('shiftContainerScrollTop');
-                if (orderPoolScrollTop) {
-                    document.getElementById('orderPool').scrollTop = parseInt(orderPoolScrollTop);
-                }
-                if (shiftContainerScrollTop) {
-                    document.querySelector('.shift-container').scrollTop = parseInt(shiftContainerScrollTop);
-                }
-            });
-    });
+    // 辅助函数：将时间转换为时间段索引
+    function getSlotIndex(timeStr) {
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        const totalMinutes = hours * 60 + minutes;
+        // 计算从8:00开始的分钟偏移量
+        const startMinutes = 8 * 60;
+        const offsetMinutes = totalMinutes - startMinutes;
+        return Math.floor(offsetMinutes / 30); // 每30分钟一个时间段
+    }
 
     // 渲染工单池
     function renderOrderPool(orders) {
@@ -68,9 +68,17 @@
         orderList.innerHTML = '';
         orders.forEach(order => {
             const orderItem = document.createElement('div');
-            orderItem.className = 'order-item';
+            // 检查工时是否为空或无效
+            const isGsxsEmpty = !order.gsxs || isNaN(parseFloat(order.gsxs)) || parseFloat(order.gsxs) <= 0;
+            // 添加基础类名和禁用状态类名
+            orderItem.className = `order-item ${isGsxsEmpty ? 'order-disabled' : ''}`;
             orderItem.dataset.orderNo = order.scgdh;
-            orderItem.dataset.gsxs = order.gsxs; // 添加工时数据属性
+            orderItem.dataset.gsxs = order.gsxs;
+            // 工时为空时禁止拖动并添加提示
+            if (isGsxsEmpty) {
+                orderItem.draggable = false;
+                orderItem.title = '工时为空或无效，无法排产';
+            }
 
             const prevProcessClass = order.sdgx ? 'active' : '';//标签判断
             const nextProcessClass = order.xdgx ? 'active' : '';
@@ -78,10 +86,14 @@
             const technical = order.gysx;
 
             orderItem.innerHTML = `
-                    <div class="order-header">工单号: ${order.scgdh} - 工时: ${order.gsxs || ''}小时 - 交货期：<span style="color: #aa4343;">${order.jhrq || ''} ${order.jhsj || ''}</span> - 最早生产时间：${order.zzscrq || ''} ${order.zzscsj || ''} </div>
+                    <div class="order-header">工单号:<a href="/order?no=${order.scgdh}" target="_blank" class="order-no-link">${order.scgdh}</a>  - 工时: ${order.gsxs || ''}小时 - 交货期：<span style="color: #aa4343;">${order.jhrq || ''} ${order.jhsj || ''}</span> - 最早生产时间：${order.zzscrq || ''} ${order.zzscsj || ''} </div>
                     <div class="order-details">
                         <p>客户：【${order.khmc || ''}】 规格：【${order.gg || ''}】 成品数量：【${order.sl || ''}】 </p>
-                        <p>上道工序：【${order.sdgx || ''}】 - 下道工序：【${order.xdgx || ''}】 </p>
+                        <p>上道工序：<a href="/order?no=${order.sdgx }" target="_blank" style="color: #f36bba;" class="order-no-link">${order.sdgx || ''}</a> - 下道工序：<a href="/order?no=${order.xdgx }" target="_blank" style="color: #24c6ae;" class="order-no-link">${order.xdgx || ''}</a> </p>
+
+
+
+
                     </div>
                     <div class="order-tags">
                         <span class="tag technical-${technical}">${technical}</span>
@@ -105,11 +117,17 @@
         // 生成未来三天的日期
         const today = new Date();
         const dates = [
-            { date: formatDate(today), label: formatDisplayDate(today) },
-            { date: formatDate(new Date(today.getTime() + 86400000)), label: formatDisplayDate(new Date(today.getTime() + 86400000)) },
-            { date: formatDate(new Date(today.getTime() + 86400000 * 2)), label: formatDisplayDate(new Date(today.getTime() + 86400000 * 2)) }
+            { date: formatDate(today), label: '今天<br>'+formatDisplayDate(today) },
+            { date: formatDate(new Date(today.getTime() + 86400000)), label: '明天<br>'+formatDisplayDate(new Date(today.getTime() + 86400000)) },
+            { date: formatDate(new Date(today.getTime() + 86400000 * 2)), label: '+2天<br>'+formatDisplayDate(new Date(today.getTime() + 86400000 * 2)) },
+            { date: formatDate(new Date(today.getTime() + 86400000 * 3)), label: '+3天<br>'+formatDisplayDate(new Date(today.getTime() + 86400000 * 3)) },
+            { date: formatDate(new Date(today.getTime() + 86400000 * 4)), label: '+4天<br>'+formatDisplayDate(new Date(today.getTime() + 86400000 * 4)) },
+            { date: formatDate(new Date(today.getTime() + 86400000 * 5)), label: '+5天<br>'+formatDisplayDate(new Date(today.getTime() + 86400000 * 5)) },
+            { date: formatDate(new Date(today.getTime() + 86400000 * 6)), label: '+6天<br>'+formatDisplayDate(new Date(today.getTime() + 86400000 * 6)) },
+            { date: formatDate(new Date(today.getTime() + 86400000 * 7)), label: '+7天<br>'+formatDisplayDate(new Date(today.getTime() + 86400000 * 7)) },
+            { date: formatDate(new Date(today.getTime() + 86400000 * 8)), label: '+8天<br>'+formatDisplayDate(new Date(today.getTime() + 86400000 * 8)) },
+            { date: formatDate(new Date(today.getTime() + 86400000 * 9)), label: '+9天<br>'+formatDisplayDate(new Date(today.getTime() + 86400000 * 9)) },
         ];
-
         const container = document.querySelector('.shift-container');
         // 创建表格结构
         container.innerHTML = `
@@ -167,7 +185,15 @@
                 <tr class="time-slot-row">
                     <td class="time-slot">${slot}</td>
                     <td class="shift-order-slot" 
-                         data-date="${dateInfo.date}" 
+                         data-date="${(() => {
+                             const baseDate = new Date(dateInfo.date);
+                             // Use the correct time slot variable (assuming it's called 'timeSlot')
+                             const [hours] = slot.split(':').map(Number);
+                             if (hours < 8) {
+                                 baseDate.setDate(baseDate.getDate() + 1);
+                             }
+                             return formatDate(baseDate);
+                         })()}" 
                          data-shift="${shift}" 
                          data-time-slot="${slot}" 
                          data-slot-index="${offsetIndex + localIndex}"></td> <!-- 添加索引标识 -->
@@ -193,7 +219,7 @@
         // 生成半小时为间隔的时间段
         for (let hour = startHour; hour < endHour; hour++) {
             for (let minute = 0; minute < 60; minute += 30) {
-                const hourStr = hour % 24;
+                const hourStr = String(hour % 24).padStart(2, '0');
                 const minuteStr = minute.toString().padStart(2, '0');
                 slots.push(`${hourStr}:${minuteStr}`);
             }
@@ -216,130 +242,7 @@
 
     // 在DOMContentLoaded事件处理函数中添加
 
-    // 初始化拖拽功能
-    function initDragAndDrop() {
-        // 工单池拖拽源
-        const orderPool = document.getElementById('orderList');
-        new Sortable(orderPool, {
-            group: 'shared',
-            animation: 150,
-            ghostClass: 'order-ghost',
-            // 添加从班次拖回工单池的处理
-            onAdd: function (evt) {
-
-                // console.log("拖动1"+ evt);
-
-                if (evt.from !== evt.to) { // 确保是从外部拖入工单池
-                    const orderNo = evt.item.dataset.orderNo;
-                    // 调用取消排产API
-                    fetch('/api/unschedule', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ order_no: orderNo })
-                    })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (!data.success) {
-                                alert('取消排产失败: ' + data.message);
-                                evt.item.remove(); // 从DOM中移除元素
-                            } else {
-                                // 拖拽成功后刷新页面
-                                // alert("刷新？")
-                                location.reload();
-                            }
-                        });
-                }
-            }
-        });
-
-        // 班次区域拖拽目标 - 修改选择器为.order-slot
-        document.querySelectorAll('.shift-order-slot').forEach(slot => {
-            new Sortable(slot, {
-                group: 'shared',
-                animation: 150,
-                onAdd: function (evt) {
-
-                    // console.log("拖动2"+ evt);
-
-                    const orderNo = evt.item.dataset.orderNo;
-                    const date = evt.to.dataset.date;
-                    const shift = evt.to.dataset.shift;
-                    // 自动获取拖入单元格的时间，不再需要手动输入
-                    const startTime = evt.to.dataset.timeSlot;
-                    const orderDuration = parseFloat(evt.item.dataset.gsxs); // 获取工单工时
-                    const currentSlotIndex = parseInt(evt.to.dataset.slotIndex);
-                    const slotsToMerge = Math.ceil(orderDuration * 2); // 计算需要合并的单元格数量
-
-                    // 1. 冲突检测
-                    let hasConflict = false;
-                    console.log("gsxs：" + evt.item.dataset.gsxs);
-                    for (let i = 0; i < slotsToMerge; i++) {
-                        console.log("冲突检测：" + currentSlotIndex + i)
-                        const checkSlotIndex = currentSlotIndex + i;
-                        // 查找同日期同班次下的目标时间段单元格
-                        const checkSlot = document.querySelector(`.shift-order-slot[data-slot-index="${checkSlotIndex}"]`);
-
-                        // 检查条件：单元格存在且已包含工单
-                        if (checkSlot.children.length > 0) {
-                            console.log(checkSlotIndex + ": " + checkSlot.children[0].dataset.orderNo);
-                            if (checkSlot.children[0].dataset.orderNo !== orderNo || checkSlot.children.length > 1) {
-                                hasConflict = true;
-                                break;
-                            }
-                        }
-                    }
-
-                    // 2. 处理冲突情况
-                    if (hasConflict) {
-                        alert('目标时间段存在冲突工单，请选择其他时间段！');
-                        // 将工单移回原位置
-                        evt.from.appendChild(evt.item);
-                        return; // 终止后续操作
-                    }
-
-                    // 3. 无冲突时继续排产流程
-                    if (startTime) {
-                        // 调用排产API
-                        fetch('/api/schedule', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                order_no: orderNo,
-                                plan_date: date,
-                                shift: shift,
-                                start_time: startTime
-                            })
-                        })
-                            .then(response => response.json())
-                            .then(data => {
-                                if (!data.success) {
-                                    alert('排产失败: ' + data.message);
-                                    evt.item.remove();
-                                } else {
-                                    // alert("刷新？222")
-                                    location.reload();
-                                }
-                            });
-                    }
-                }
-            });
-        });
-    }
-
-    // 辅助函数：格式化日期为YYYY-MM-DD
-    function formatDate(date) {
-        return date.toISOString().split('T')[0];
-    }
-
-
-    // 根据工时计算工单高度
-    function calculateOrderHeight(hours) {
-        // 每个时间段行高40px，每0.5小时对应一个时间段高度
-        const baseHeight = 25; // 基础高度（半小时）
-        return `${baseHeight * (hours / 0.5)}px`;
-    }
-
-    // 添加渲染已排产工单的函数##############################################3
+    // 渲染已排产工单的函数##############################################3
     function renderScheduledOrders(orders) {
         orders.forEach(order => {
             const orderDate = order.jhksrq; // 计划日期
@@ -378,11 +281,11 @@
                 //         <div class="order-details">工时: ${orderDuration}小时</div>
                 //         `;
                 orderElement.innerHTML = `
-                        <div class="order-header">${orderNo} - ${order.gsxs}小时 - 交货：<span style="color: #aa4343;">${order.jhrq || ''} ${order.jhsj || ''}</span> - 最早：${order.zzscrq || ''} ${order.zzscsj || ''} </div>
+                        <div class="order-header">工单号:<a href="/order?no=${orderNo}" target="_blank" class="order-no-link">${orderNo}</a> - ${order.gsxs}小时 - 交货：<span style="color: #aa4343;">${order.jhrq || ''} ${order.jhsj || ''}</span> - 最早：${order.zzscrq || ''} ${order.zzscsj || ''} </div>
                     <div class="order-details">
                         <p>客户：【${order.khmc}】 规格：【${order.gg}】 成品数量：【${order.sl}】 </p>
                         <p>工艺详情：【${order.gy}/${order.bm}/${order.pzdl}】</p>
-                        <p>上道工序：【${order.sdgx}】 - 下道工序：【${order.xdgx}】 </p>
+                        <p>上道工序：${order.sdgx || ''} - 下道工序：${order.xdgx || ''}</p>
                     </div>
                     <div class="process-tooltip">
                          <p>客户：${order.khmc || ''} 规格：${order.gg || ''} 成品数量：${order.sl} </p>
@@ -398,20 +301,184 @@
         });
     }
 
-    // 添加辅助函数：根据时间确定班次
-    function getShiftFromTime(timeStr) {
-        const hour = parseInt(timeStr.split(':')[0]);
-        return hour >= 8 && hour < 20 ? 'A' : 'B';
+    // 初始化拖拽排产功能
+    function initDragAndDrop() {
+        // 工单池拖拽源
+        const orderPool = document.getElementById('orderList');
+        new Sortable(orderPool, {
+            group: 'shared',
+            animation: 150,
+            ghostClass: 'order-ghost',
+
+            // 取消排产：从班次拖回工单池的处理
+            onAdd: function (evt) {
+                // console.log("拖动1"+ evt);
+                if (evt.from !== evt.to) { // 确保是从外部拖入工单池
+                    const orderNo = evt.item.dataset.orderNo;
+                    // 调用取消排产API
+                    if (!confirm(`确定要将工单${orderNo}取消排产吗？`)) {
+                        // 用户取消操作，将工单移回原位置
+                        evt.from.appendChild(evt.item);
+                        return;
+                    }
+                    fetch('/api/unschedule', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ order_no: orderNo })
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (!data.success) {
+                                alert('取消排产失败: ' + data.message);
+                                evt.item.remove(); // 从DOM中移除元素
+                            } else {
+                                // 拖拽成功后刷新页面
+                                // alert("刷新？")
+                                location.reload();
+                            }
+                        });
+                }
+            }
+        });
+
+        // 班次区域拖拽目标 - 修改选择器为.order-slot
+        document.querySelectorAll('.shift-order-slot').forEach(slot => {
+            new Sortable(slot, {
+                group: 'shared',
+                animation: 150,
+                onAdd: function (evt) {
+                    // console.log("拖动2"+ evt);
+                    const orderNo = evt.item.dataset.orderNo;
+                    const date = evt.to.dataset.date;
+                    const shift = evt.to.dataset.shift;
+                    // 自动获取拖入单元格的时间，不再需要手动输入
+                    const startTime = evt.to.dataset.timeSlot;
+                    const orderDuration = parseFloat(evt.item.dataset.gsxs); // 获取工单工时
+                    const currentSlotIndex = parseInt(evt.to.dataset.slotIndex);
+                    const slotsToMerge = Math.ceil(orderDuration * 2); // 计算需要合并的单元格数量
+
+                    const itemEl = evt.item;
+                    const target = evt.to;
+                    const planDate = target.getAttribute('data-date');
+                
+                    // 构建确认消息
+                    const confirmMessage = `确定要将工单${orderNo}排产到${planDate} ${startTime}吗？`;
+                    if (!confirm(confirmMessage)) {
+                        // 用户取消，将工单移回原位置
+                        evt.from.appendChild(itemEl);
+                        return;
+                    }
+
+
+                    // 1. 工时有效性前置校验
+                    if (!orderDuration || isNaN(orderDuration) || orderDuration <= 0) {
+                        alert(`工单${orderNo}工时为空或无效，无法排产！`);
+                        evt.from.appendChild(evt.item); // 移回原位置
+                        return; // 终止后续操作
+                    }
+
+                    // 2. 冲突检测
+                    let hasConflict = false;
+                    console.log("gsxs：" + evt.item.dataset.gsxs);
+                    for (let i = 0; i < slotsToMerge; i++) {
+                        console.log("冲突检测：" + currentSlotIndex + i)
+                        const checkSlotIndex = currentSlotIndex + i;
+                        // 查找同日期同班次下的目标时间段单元格
+                        const checkSlot = document.querySelector(`.shift-order-slot[data-slot-index="${checkSlotIndex}"]`);
+
+                        // 检查条件：单元格存在且已包含工单
+                        if (checkSlot.children.length > 0) {
+                            console.log(checkSlotIndex + ": " + checkSlot.children[0].dataset.orderNo);
+                            if (checkSlot.children[0].dataset.orderNo !== orderNo || checkSlot.children.length > 1) {
+                                hasConflict = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    // 3. 处理冲突情况
+                    if (hasConflict) {
+                        alert('目标时间段存在冲突工单，请选择其他时间段！');
+                        // 将工单移回原位置
+                        evt.from.appendChild(evt.item);
+                        return; // 终止后续操作
+                    }
+
+                    // 4. 无冲突时继续排产流程
+                    if (startTime) {
+                        // 计算计划完工时间
+                        const startDateTime = new Date(`${date}T${startTime}`);
+                        // startDateTime.setHours(startDateTime.getHours() + orderDuration);
+                        // 替换原有的setHours计算方式，优化小数工时计算逻辑
+                        const totalMinutes = Math.round(orderDuration * 60);
+                        // 将总分钟数转换为毫秒并添加到起始时间
+                        startDateTime.setTime(startDateTime.getTime() + totalMinutes * 60 * 1000);
+                        console.log('计算后的时间：', startDateTime);
+                        const jhwgrq = formatDate(startDateTime);
+                        console.log('计算后的完工日期',jhwgrq);
+                        const jhwgsj = `${startDateTime.getHours().toString().padStart(2, '0')}:${startDateTime.getMinutes().toString().padStart(2, '0')}`;
+
+                        // 调用排产API
+                        fetch('/api/schedule', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                order_no: orderNo,
+                                plan_date: date,
+                                shift: shift,
+                                start_time: startTime,
+                                jhwgrq: jhwgrq,  // 计划完工日期
+                                jhwgsj: jhwgsj   // 计划完工时间
+                            })
+                        })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (!data.success) {
+                                    alert('排产失败: ' + data.message);
+                                    evt.item.remove();
+                                } else {
+                                    //alert("刷新？222")
+                                    location.reload();
+                                }
+                            });
+                    }
+                }
+            });
+        });
     }
 
-    // 添加辅助函数：将时间转换为时间段索引
-    function getSlotIndex(timeStr) {
-        const [hours, minutes] = timeStr.split(':').map(Number);
-        const totalMinutes = hours * 60 + minutes;
-        // 计算从8:00开始的分钟偏移量
-        const startMinutes = 8 * 60;
-        const offsetMinutes = totalMinutes - startMinutes;
-        return Math.floor(offsetMinutes / 30); // 每30分钟一个时间段
-    }
+    // 初始化拖拽功能
+    document.addEventListener('DOMContentLoaded', function () {
+        // 先初始化班次表格
+        initShiftTable();
+
+        // 加载工单数据
+        fetch('/api/orders')
+            .then(response => response.json())
+            .then(orders => {
+                renderOrderPool(orders);
+                // 在班次表格和工单数据都准备好后初始化拖拽
+                initDragAndDrop();
+            });
+        // 加载已排产工单
+        fetch('/api/scheduled_orders')
+            .then(response => response.json())
+            .then(scheduledOrders => {
+                renderScheduledOrders(scheduledOrders);
+            })
+            .finally(() => {
+                // 恢复滚动位置
+                const orderPoolScrollTop = localStorage.getItem('orderPoolScrollTop');
+                const shiftContainerScrollTop = localStorage.getItem('shiftContainerScrollTop');
+                if (orderPoolScrollTop) {
+                    document.getElementById('orderPool').scrollTop = parseInt(orderPoolScrollTop);
+                }
+                if (shiftContainerScrollTop) {
+                    document.querySelector('.shift-container').scrollTop = parseInt(shiftContainerScrollTop);
+                }
+            });
+    });
+
+
 </script>
 {% endblock %}

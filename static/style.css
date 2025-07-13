@@ -51,14 +51,31 @@ body {
     
 }
 
+/* 添加标签样式 */
 .order-header {
+    position: relative;
+    /* margin-bottom: 20px; */
+}
+
+.order-detail-container h2{
+    margin-bottom: 20px;
+}
+
+.badge.jzmc-badge {
+    position: absolute;
+    margin: 3px 8px;
+    background-color: #4CAF50;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 14px;
     font-weight: bold;
-    margin-bottom: 5px;
-    color: #333;
 }
 
 .order-details {
     color: #666;
+    max-height: 60%;
+    overflow: hidden;
 }
 
 /* 排产区域样式 */
@@ -233,7 +250,7 @@ body {
 
 /* 时间段和工单行高对齐 */
 .time-slot-row {
-    height: 25px;
+    height: 20px;
     /* 固定行高，确保对齐 */
 }
 
@@ -494,7 +511,7 @@ html {
 }
 
 .next-process.active {
-    background: #55abf1;color: white;
+    background: #24c6ae;color: white;
 }
 
 
@@ -540,10 +557,39 @@ html {
     margin-bottom: 0.5rem;
 }
 
+.info-item {
+    margin: 1rem 2rem;
+    display: flex;
+}
+
 /* 状态标签样式 */
-.status-已排产 { color: #27ae60; }
-.status-待排产 { color: #dfc928; }
-.status-异常 { color: #e74c3c; }
+.status-已排产 { background-color: #86eab0; }
+.status-待排产 { background-color: #f3e57e; }
+.status-异常 { background-color: #eaa199; }
+
+/* 工单计划状态样式 */
+.non-editable .status-已排产 {
+    background-color: #dff0d8;
+    color: #3c763d;
+    font-weight: bold;
+}
+
+.non-editable .status-待排产 {
+    background-color: #fcf8e3;
+    color: #8a6d3b;
+}
+
+.non-editable .status-异常 {
+    background-color: #f2dede;
+    color: #a94442;
+    font-weight: bold;
+}
+
+/* 通用状态样式 */
+td[class*="status-"] {
+    padding: 4px 8px;
+    border-radius: 4px;
+}
 
 .timeline {
     border-left: 3px solid #3498db;
@@ -571,7 +617,7 @@ html {
 
 .sdgx-on {
     display: block;
-    background-color: #f8b762;
+    color: #f36bba;
 }
 
 .xdgx-off {
@@ -580,7 +626,7 @@ html {
 
 .xdgx-on {
     display: block;
-    background-color: #affcf4;
+    color: #24c6ae;
 }
 
 .time-warning {
@@ -591,4 +637,184 @@ html {
 .time-invalid {
     color: red;
     font-weight: bold;
+}
+
+
+/* 禁用状态的输入框样式 */
+input[disabled] {
+    background-color: #f5f5f5;
+    color: #999;
+    cursor: not-allowed;
+    border: 1px solid #ddd;
+}
+
+/* 禁用状态的按钮样式 */
+.disabled-btn {
+    background-color: #cccccc;
+    color: #666666;
+    cursor: not-allowed;
+    border: 1px solid #aaaaaa;
+}
+
+
+
+.order-item.order-disabled {
+    background-color: #f0f0f0;
+    border: 1px dashed #ccc;
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.order-item.order-disabled .order-header,
+.order-item.order-disabled .order-details,
+.order-item.order-disabled .order-tags {
+    color: #999;
+}
+
+.order-item.order-disabled:hover {
+    box-shadow: none;
+    transform: none;
+}
+
+/* 添加超链接样式 */
+.order-no-link {
+    color: #3444ae;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.order-no-link:hover {
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+/* 修改按钮样式 */
+.edit-button {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    padding: 8px 16px;
+    background-color: #1d2e61;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.edit-button:hover {
+    background-color: #4c67b9;
+}
+
+/* 模态框样式 */
+.modal {
+    display: none; /* 默认隐藏 */
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 10% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 50%;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+}
+
+.close-btn {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close-btn:hover {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.form-group input, .form-group textarea {
+    width: 100%;
+    padding: 8px;
+    box-sizing: border-box;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.form-actions {
+    margin-top: 20px;
+    text-align: right;
+}
+
+.confirm-btn {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 10px;
+}
+
+.cancel-btn {
+    background-color: #f44336;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* 加载状态样式 */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.loading-text {
+    color: white;
+    margin-top: 15px;
+    font-size: 16px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }

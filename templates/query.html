@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}工单查询{% endblock %}
+{% block title %}智慧排产中心-工单查询{% endblock %}
 
 {% block content %}
     <div class="container">
@@ -59,21 +59,27 @@
                 const row = document.createElement('tr');
                 // 判断交货日期是否为空，为空则添加empty-value类
                 const jhrqClass = order.jhrq ? 'editable' : 'editable empty-value';
+                // 判断是否已排产
+                const isScheduled = order.gdjhzt === '已排产';
+                const disabledAttr = isScheduled ? 'disabled' : '';
+                const saveBtnClass = isScheduled ? 'action-btn  disabled-btn' : 'action-btn save-btn';
+                
                 row.innerHTML = `
                     <td class="non-editable">${order.scgdh}</td>
-                    <td><input type="date" class="${jhrqClass}" data-field="jhrq" value="${order.jhrq || ''}"></td>
-                    <td><input type="time" class="editable" data-field="jhsj" value="${order.jhsj || ''}"></td>
+                    <td class=" status-${order.gdjhzt ? order.gdjhzt.replace(/\s+/g, '') : ''}">${order.gdjhzt || ''}</td>
+                    <td><input type="date" class="${jhrqClass}" data-field="jhrq" value="${order.jhrq || ''}" ${disabledAttr}></td>
+                    <td><input type="time" class="editable" data-field="jhsj" value="${order.jhsj || ''}" ${disabledAttr}></td>
                     <td class="non-editable">${order.ywy || ''}</td>
                     <td class="non-editable">${order.ylkw || ''}</td>
                     <td class="non-editable">${order.gsxs || ''}</td>
                     <td class="non-editable">${order.jhksrq || ''}</td>
                     <td class="non-editable">${order.jhkssj || ''}</td>
                     <td class="non-editable">${order.bc || ''}</td>
-                    <td><input type="date" class="editable" data-field="zzscrq" value="${order.zzscrq || ''}"></td>
-                    <td><input type="time" class="editable" data-field="zzscsj" value="${order.zzscsj || ''}"></td>
-                    <td class="non-editable">${order.gdjhzt || ''}</td>
+                    <td><input type="date" class="editable" data-field="zzscrq" value="${order.zzscrq || ''}" ${disabledAttr}></td>
+                    <td><input type="time" class="editable" data-field="zzscsj" value="${order.zzscsj || ''}" ${disabledAttr}></td>
+                    
                     <td>
-                        <button class="action-btn save-btn" onclick="saveOrder('${order.scgdh}', this)">保存</button>
+                        <button class="${saveBtnClass}" onclick="saveOrder('${order.scgdh}', this)" ${isScheduled ? 'disabled' : ''}>保存</button>
                         <button class="detail-btn" onclick="window.open('/order?no=${order.scgdh}', '_blank')">详情</button>
                     </td>
                 `;

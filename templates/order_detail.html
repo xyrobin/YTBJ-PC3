@@ -1,9 +1,46 @@
 {% extends "base.html" %}
-
+{% block title %}智慧排产中心-工单详情{% endblock %}
 {% block content %}
 <div class="order-detail-container">
-    <h2 style="margin: 10px;">生产工单详情：<span class="scgdh"></span></h2>
+    <!-- <h2 style="margin: 10px;">生产工单详情：<span class="scgdh"></span></h2> -->
+    <div class="order-header">
+        <h2>工单详情：<span class="scgdh"></span><span class="badge jzmc-badge jzmc"></span><button id="edit-btn" class="edit-button">修改信息</button></h2>
+        
+    </div>
 
+    <!-- 添加模态框 -->
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h3>修改工单信息</h3>
+            <form id="edit-form">
+                <div class="form-group">
+                    <label for="jhrq">交货日期：</label>
+                    <input type="date" id="jhrq" name="jhrq" >
+                </div>
+                <div class="form-group">
+                    <label for="jhsj">交货时间：</label>
+                    <input type="time" id="jhsj" name="jhsj" >
+                </div>
+                <div class="form-group">
+                    <label for="zzscrq">最早生产日期：</label>
+                    <input type="date" id="zzscrq" name="zzscrq">
+                </div>
+                <div class="form-group">
+                    <label for="zzscsj">最早生产时间：</label>
+                    <input type="time" id="zzscsj" name="zzscsj">
+                </div>
+                <div class="form-group">
+                    <label for="jhbz">计划备注：</label>
+                    <textarea id="jhbz" name="jhbz" rows="3"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="confirm-btn">确认修改</button>
+                    <button type="button" class="cancel-btn">取消</button>
+                </div>
+            </form>
+        </div>
+    </div>
     <div class="detail-card">
         <!-- 基础信息区块 -->
         <div class="detail-section">
@@ -14,11 +51,6 @@
                     <span class="value khmc"></span>
                 </div>
                 <div class="grid-item">
-                    <label>计划状态：</label>
-                    <!-- 修改HTML部分（第18行） -->
-                    <span class="status gdjhzt"></span>
-                </div>
-                <div class="grid-item">
                     <label>业务员：</label>
                     <span class="value ywy"></span>
                 </div>
@@ -27,21 +59,37 @@
                     <span class="value jgdw"></span>
                 </div>
                 <div class="grid-item">
-                    <label>机组名称：</label>
-                    <span class="value jzmc"></span>
-                </div>
-                <div class="grid-item">
                     <label>交货期：</label>
                     <span class="value jhrq"></span>
+                    <span class="value jhsj"></span>
                 </div>
                 <div class="grid-item">
-                    <label>计划开始时间：</label>
-                    <span class="value jhksrq"></span>
-                    <span class="value jhkssj"></span>
+                    <label>最早生产时间：</label>
+                    <span class="value zzscrq"></span>
+                    <span class="value zzscsj"></span>
                 </div>
+                <div class="grid-item">
+                    <label>工单状态：</label>
+                    <!-- 修改HTML部分（第18行） -->
+                    <span class="status gdzt"></span>
+                </div>
+                <div class="grid-item">
+                    <label>计划状态：</label>
+                    <!-- 修改HTML部分（第18行） -->
+                    <span class="status gdjhzt"></span>
+                </div>
+
                 <div class="grid-item">
                     <label>班次：</label>
                     <span class="value bc"></span>
+                </div>
+                <div class="grid-item">
+                    <label>标准工时：</label>
+                    <span class="value gs"></span>
+                </div>
+                <div class="grid-item">
+                    <label>计划备注：</label>
+                    <span class="value jhbz"></span>
                 </div>
             </div>
         </div>
@@ -52,7 +100,7 @@
             <div class="timeline">
                 <div class="timeline-item sdgx-off">
                     <label>上道工序：</label>
-                    <span class="value sdgx"></span>
+                    <a href="" class="sdgx-link" target="_blank"><span class="value sdgx"></span></a>
                 </div>
                 <div class="timeline-item">
                     <label>最早生产时间：</label>
@@ -67,13 +115,25 @@
                     <span class="time-warning"></span>
                 </div>
                 <div class="timeline-item">
+                    <label>计划完工时间：</label>
+                    <span class="value jhwgrq"></span>
+                    <span class="value jhwgsj"></span>
+                    <!-- 添加提醒容器 -->
+                    <span class="time-warning"></span>
+                </div>
+                <div class="timeline-item">
                     <label>交货时间：</label>
                     <span class="value jhrq"></span>
                     <span class="value jhsj"></span>
                 </div>
                 <div class="timeline-item xdgx-off">
                     <label>下道工序：</label>
-                    <span class="value xdgx"></span>
+                    <a href="" class="xdgx-link" target="_blank"><span class="value xdgx"></span></a>
+                </div>
+                <div class="timeline-item">
+                    <label>实际发货时间：</label>
+                    <span class="value fhrq"></span>
+                    <span class="value fhsj"></span>
                 </div>
             </div>
         </div>
@@ -84,13 +144,51 @@
             <div class="material-info">
                 <div class="info-item">
                     <span class="label">原料库位：</span>
-                    <span class="value">{{ order.原料库位 }}</span>
+                    <span class="value ylkw"></span>
                 </div>
                 <div class="info-item">
                     <span class="label">原料张数：</span>
-                    <span class="value">{{ order.原料张数 }}</span>
+                    <span class="value ylzs"></span>
                 </div>
-                <!-- 其他原料字段 -->
+                <div class="info-item">
+                    <span class="label">原料重量：</span>
+                    <span class="value ylzl"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 产品信息区块 -->
+        <div class="detail-section">
+            <h3>🛍️ 产品信息</h3>
+            <div class="material-info">
+                <div class="info-item">
+                    <span class="label">牌号：</span>
+                    <span class="value ph"></span>
+                </div>
+                <div class="info-item">
+                    <span class="label">品种名称：</span>
+                    <span class="value pzmc"></span>
+                </div>
+                <div class="info-item">
+                    <span class="label">品种大类：</span>
+                    <span class="value pzdl"></span>
+                </div>
+                <div class="info-item">
+                    <span class="label">规格：</span>
+                    <span class="value gg"></span>
+                </div>
+                <div class="info-item">
+                    <span class="label">工艺：</span>
+                    <span class="value gy"></span>
+                </div>
+                <div class="info-item">
+                    <span class="label">表面：</span>
+                    <span class="value bm"></span>
+                </div>
+                <div class="info-item">
+                    <span class="label">备注：</span>
+                    <span class="value bz"></span>
+                </div>
             </div>
         </div>
     </div>
@@ -104,12 +202,24 @@
 
 
         // 在fetch成功回调中调用校验函数
+        // 获取DOM元素
+        const editBtn = document.getElementById('edit-btn');
+        const modal = document.getElementById('edit-modal');
+        const closeBtn = document.querySelector('.close-btn');
+        const cancelBtn = document.querySelector('.cancel-btn');
+        const editForm = document.getElementById('edit-form');
+        let currentOrder = null;
+
+        // 在获取订单数据后保存当前订单对象
         fetch(`/api/order/${orderNo}`)
             .then(response => response.json())
             .then(data => {
                 console.log(data)
                 // console.log('获取到的订单数据:', data[0], '其中khmc字段值为:', data[0].khmc?data[0].khmc:'无');
-                const order = data && data.length > 0 ? data[0] : null;
+
+                //const order = data && data.length > 0 ? data[0] : null;
+                window.order = data && data.length > 0 ? data[0] : null;
+
                 console.log('订单数据:', order);
                 if (!order) {
                     document.getElementById('error-message').textContent = '未找到订单数据';
@@ -159,6 +269,18 @@
                         sdgxElements.classList.add(`sdgx-on`);
                     }
                 });
+                // 处理上道工序链接
+                const sdgxLink = document.querySelector('.sdgx-link');
+                if (sdgxLink) {
+                    if (order.sdgx) {
+                        // 设置链接地址
+                        sdgxLink.href = `/order?no=${encodeURIComponent(order.sdgx)}`;
+                        sdgxLink.style.display = 'inline';
+                    } else {
+                        // 无数据时隐藏链接
+                        sdgxLink.style.display = 'none';
+                    }
+                }
                 //下道工序
                 const xdgxElements = document.getElementsByClassName('xdgx-off');
                 Array.from(xdgxElements).forEach(xdgxElements => {
@@ -167,14 +289,30 @@
                         xdgxElements.classList.add(`xdgx-on`);
                     }
                 });
+                // 处理下道工序链接
+                const xdgxLink = document.querySelector('.xdgx-link');
+                if (xdgxLink) {
+                    if (order.xdgx) {
+                        // 设置链接地址
+                        xdgxLink.href = `/order?no=${encodeURIComponent(order.xdgx)}`;
+                        xdgxLink.style.display = 'inline';
+                    } else {
+                        // 无数据时隐藏链接
+                        xdgxLink.style.display = 'none';
+                    }
+                }
 
                 // 时间校验
                 validateProductionTime(order);
+                //编辑框赋值
+                populateEditForm(order);
             });
+
+
 
         // 添加时间校验
         // 修改解析函数以支持完整datetime字符串
-        function parseDateTime(dateStr,timeStr) {
+        function parseDateTime(dateStr, timeStr) {
 
             if (!dateStr) return null;
             timeStr = timeStr || '23:59:59';
@@ -188,17 +326,22 @@
             // 获取时间元素
             const planDateEl = document.getElementsByClassName('jhksrq')[0];
             const planTimeEl = document.getElementsByClassName('jhkssj')[0];
-            const warningEl = document.getElementsByClassName('time-warning')[0];
+            const planEndDateEl = document.getElementsByClassName('jhwgrq')[0];
+            const planEndTimeEl = document.getElementsByClassName('jhwgsj')[0];
+            const earlyWarningEl = document.getElementsByClassName('time-warning')[0];
+            const lateWarningEl = document.getElementsByClassName('time-warning')[1];
 
             // 修改：直接传入完整datetime字符串
-            const earliestDateTime = parseDateTime(order.zzscrq,order.zzscsj);
-            const planDateTime = parseDateTime(order.jhksrq,order.jhkssj);
-            const deliveryDateTime = parseDateTime(order.jhrq,order.jhsj);
+            const earliestDateTime = parseDateTime(order.zzscrq, order.zzscsj);
+            const planDateTime = parseDateTime(order.jhksrq, order.jhkssj);
+            const planEndDateTime = parseDateTime(order.jhwgrq, order.jhwgsj);
+            const deliveryDateTime = parseDateTime(order.jhrq, order.jhsj);
 
             // 添加调试日志
             console.log('时间解析结果:', {
                 earliest: earliestDateTime,
                 plan: planDateTime,
+                planEnd: planEndDateTime,
                 delivery: deliveryDateTime
             });
 
@@ -207,28 +350,135 @@
                 planDateEl.classList.remove('time-invalid');
                 planTimeEl.classList.remove('time-invalid');
             }
-            if (warningEl) warningEl.textContent = '';
+            if (planEndDateEl && planEndTimeEl) {
+                planEndDateEl.classList.remove('time-invalid');
+                planEndTimeEl.classList.remove('time-invalid');
+            }
+            if (earlyWarningEl) earlyWarningEl.textContent = '';
+            if (lateWarningEl) lateWarningEl.textContent = '';
 
             // 时间校验逻辑
-            if (planDateTime && earliestDateTime && deliveryDateTime) {
+            if (planDateTime && earliestDateTime && planEndDateTime && deliveryDateTime) {
                 if (planDateTime < earliestDateTime) {
                     // 计划时间早于最早生产时间
                     if (planDateEl && planTimeEl) {
                         planDateEl.classList.add('time-invalid');
                         planTimeEl.classList.add('time-invalid');
                     }
-                    if (warningEl) warningEl.textContent = '计划生产时间早于最早开始时间，请注意';
-                } else if (planDateTime > deliveryDateTime) {
+                    if (earlyWarningEl) earlyWarningEl.textContent = '计划生产时间早于最早开始时间，请注意';
+                } else if (planEndDateTime > deliveryDateTime) {
                     // 计划时间晚于交货时间
-                    if (planDateEl && planTimeEl) {
-                        planDateEl.classList.add('time-invalid');
-                        planTimeEl.classList.add('time-invalid');
+                    if (planEndDateEl && planEndTimeEl) {
+                        planEndDateEl.classList.add('time-invalid');
+                        planEndTimeEl.classList.add('time-invalid');
                     }
-                    if (warningEl) warningEl.textContent = '计划生产时间晚于交货时间，请注意';
+                    if (lateWarningEl) lateWarningEl.textContent = '计划完完工时间晚于交货时间，请注意';
                 }
             }
         }
 
+        // 填充编辑表单
+        function populateEditForm(order) {
+            console.log('调用编辑框初始值方法');
+            document.getElementById('jhrq').value = order.jhrq || '';
+            document.getElementById('jhsj').value = order.jhsj || '';
+            document.getElementById('zzscrq').value = order.zzscrq || '';
+            document.getElementById('zzscsj').value = order.zzscsj || '';
+            document.getElementById('jhbz').value = order.jhbz || '';
+        }
+
+        // 打开模态框
+        editBtn.onclick = function () {
+            modal.style.display = 'block';
+        }
+
+        // 关闭模态框
+        function closeModal() {
+            modal.style.display = 'none';
+        }
+
+        closeBtn.onclick = closeModal;
+        cancelBtn.onclick = closeModal;
+
+        // 点击模态框外部关闭
+        window.onclick = function (event) {
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+
+        // 表单提交处理
+        editForm.onsubmit = function (e) {
+            e.preventDefault();
+
+            // 收集表单数据
+            const formData = {
+                scgdh: orderNo, // 工单号，用于标识更新哪个订单
+                jhrq: document.getElementById('jhrq').value,
+                jhsj: document.getElementById('jhsj').value,
+                zzscrq: document.getElementById('zzscrq').value,
+                zzscsj: document.getElementById('zzscsj').value,
+                jhbz: document.getElementById('jhbz').value
+            };
+
+            // 显示加载状态
+            showLoading();
+
+            // 调用更新接口
+            fetch('/api/update_order', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('更新失败');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // 隐藏加载状态
+                    hideLoading();
+
+                    if (data.success) {
+                        alert('更新成功！');
+                        closeModal();
+                        // 更新页面显示的数据
+                        // Object.assign(currentOrder, formData);
+                        // bindOrderData(currentOrder);
+                        // validateProductionTime(currentOrder);
+                    } else {
+                        alert('更新失败: ' + (data.message || '未知错误'));
+                    }
+                })
+                .catch(error => {
+                    if (error) {
+                        hideLoading();
+                        console.error('更新错误:', error.toString());
+                        alert('更新时发生错误: ' + error.message);
+                    }
+                });
+
+
+        };
+    };
+
+    // 添加加载状态控制函数
+    function showLoading() {
+        // 创建加载遮罩层
+        const loading = document.createElement('div');
+        loading.className = 'loading-overlay';
+        loading.innerHTML = '<div class="loading-spinner"></div><div class="loading-text">处理中...</div>';
+        document.body.appendChild(loading);
+    }
+
+    function hideLoading() {
+        // 移除加载遮罩层
+        const loading = document.querySelector('.loading-overlay');
+        if (loading) loading.remove();
+        window.location.reload();
     }
 </script>
 {% endblock %}

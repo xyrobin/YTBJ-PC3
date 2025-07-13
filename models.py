@@ -1,6 +1,7 @@
 import oracledb
 from datetime import datetime
 from config import conn_str
+import logging
 
 
 class ProductionOrderService:
@@ -86,17 +87,19 @@ class ProductionOrderService:
         columns = [col[0].lower() for col in self.cursor.description]
         return [dict(zip(columns, row)) for row in self.cursor.fetchall()]
 
-    def schedule_order(self, order_no, plan_date, shift, start_time):
+    def schedule_order(self, order_no, plan_date, shift, start_time,jhwgrq, jhwgsj):
         # 排产-更新工单状态为已排产
         try:
             # 检查班次是否合法
             if shift not in ["A", "B"]:
                 return {"success": False, "message": "无效的班次，必须是A或B"}
 
+            print("计划完工日期：" + jhwgrq)
+            print("计划完工时间：" + jhwgsj)
             # 更新工单状态和排产信息
             update_sql = """
             UPDATE A_PC_SCGDWH_TAB
-            SET GDJHZT = '已排产', JHKSRQ = :plan_date, BC = :shift, JHKSSJ = :start_time
+            SET GDJHZT = '已排产', JHKSRQ = :plan_date, BC = :shift, JHKSSJ = :start_time, JHWGRQ = :jhwgrq, JHWGSJ = :jhwgsj
             WHERE SCGDH = :order_no
             """
             self.cursor.execute(
@@ -106,6 +109,8 @@ class ProductionOrderService:
                     "shift": shift,
                     "start_time": start_time,
                     "order_no": order_no,
+                    "jhwgrq": jhwgrq,
+                    "jhwgsj": jhwgsj
                 },
             )
             self.connection.commit()
@@ -119,7 +124,7 @@ class ProductionOrderService:
         try:
             update_sql = """
             UPDATE A_PC_SCGDWH_TAB
-            SET GDJHZT = '待排产', JHKSRQ = NULL, BC = NULL, JHKSSJ = NULL
+            SET GDJHZT = '待排产', JHKSRQ = NULL, BC = NULL, JHKSSJ = NULL, JHWGRQ = NULL, JHWGSJ = NULL
             WHERE SCGDH = :order_no
             """
             self.cursor.execute(update_sql, {"order_no": order_no})
@@ -149,7 +154,7 @@ class ProductionOrderService:
         try:
             update_sql = """
             UPDATE A_PC_SCGDWH_TAB
-            SET JHRQ = :jhrq, JHSJ = :jhsj, ZZSCRQ = :zzscrq, ZZSCSJ = :zzscsj
+            SET JHRQ = :jhrq, JHSJ = :jhsj, ZZSCRQ = :zzscrq, ZZSCSJ = :zzscsj,jhbz = :jhbz
             WHERE SCGDH = :scgdh
             """
             self.cursor.execute(
@@ -160,12 +165,15 @@ class ProductionOrderService:
                     "zzscrq": order_data.get("zzscrq"),
                     "zzscsj": order_data.get("zzscsj"),
                     "scgdh": order_data.get("scgdh"),
+                    "jhbz": order_data.get("jhbz")
                 },
             )
             self.connection.commit()
+            print('更新成功');
             return {"success": True}
         except Exception as e:
             self.connection.rollback()
+            print('更新失败:', str(e));
             return {"success": False, "message": str(e)}
 
     def __del__(self):
@@ -205,12 +213,15 @@ class ProductionOrderService:
                    a.gdjhzt gdjhzt,
                    a.jhksrq jhksrq,
                    a.jhkssj jhkssj,
+                   a.jhwgrq jhwgrq,
+                   a.jhwgsj jhwgsj,
                    a.bc bc,
                    t.scxqdh scxqdh,
                    t.scxqdzxh scxqdzxh,
                    t.xsddh xsddh,
                    t.xsddzxh xsddzxh,
-                   t.bz bz
+                   t.bz bz,
+                   a.jhbz jhbz
               from A_RG_PRODUCTION_BILL_INTEGRATED_TAB t
               left join A_PC_SCGDWH_TAB a
                 on t.scgdh = a.scgdh

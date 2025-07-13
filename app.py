@@ -42,7 +42,9 @@ def schedule_order():
         order_no=data['order_no'],
         plan_date=data['plan_date'],
         shift=data['shift'],
-        start_time=data['start_time']
+        start_time=data['start_time'],
+        jhwgrq=data['jhwgrq'],
+        jhwgsj=data['jhwgsj']
     )
     return jsonify(result)
 
