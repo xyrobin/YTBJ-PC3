@@ -71,7 +71,10 @@
             // 检查工时是否为空或无效
             const isGsxsEmpty = !order.gsxs || isNaN(parseFloat(order.gsxs)) || parseFloat(order.gsxs) <= 0;
             // 添加基础类名和禁用状态类名
-            orderItem.className = `order-item ${isGsxsEmpty ? 'order-disabled' : ''}`;
+            const baseClass = 'order-item';
+            const disabledClass = isGsxsEmpty ? 'order-disabled' : '';
+            const ygdClass = order.is_ygd === 1 ? 'ygd-order' : '';
+            orderItem.className = [baseClass, disabledClass, ygdClass].filter(Boolean).join(' ');
             orderItem.dataset.orderNo = order.scgdh;
             orderItem.dataset.gsxs = order.gsxs;
             // 工时为空时禁止拖动并添加提示
@@ -89,7 +92,7 @@
                     <div class="order-header">工单号:<a href="/order?no=${order.scgdh}" target="_blank" class="order-no-link">${order.scgdh}</a>  - 工时: ${order.gsxs || ''}小时 - 交货期：<span style="color: #aa4343;">${order.jhrq || ''} ${order.jhsj || ''}</span> - 最早生产时间：${order.zzscrq || ''} ${order.zzscsj || ''} </div>
                     <div class="order-details">
                         <p>客户：【${order.khmc || ''}】 规格：【${order.gg || ''}】 成品数量：【${order.sl || ''}】 </p>
-                        <p>上道工序：<a href="/order?no=${order.sdgx }" target="_blank" style="color: #f36bba;" class="order-no-link">${order.sdgx || ''}</a> - 下道工序：<a href="/order?no=${order.xdgx }" target="_blank" style="color: #24c6ae;" class="order-no-link">${order.xdgx || ''}</a> </p>
+                        <p>上道工序：<a href="/order?no=${order.sdgx}" target="_blank" style="color: #f36bba;" class="order-no-link">${order.sdgx || ''}</a> - 下道工序：<a href="/order?no=${order.xdgx}" target="_blank" style="color: #24c6ae;" class="order-no-link">${order.xdgx || ''}</a> </p>
 
 
 
@@ -117,16 +120,16 @@
         // 生成未来三天的日期
         const today = new Date();
         const dates = [
-            { date: formatDate(today), label: '今天<br>'+formatDisplayDate(today) },
-            { date: formatDate(new Date(today.getTime() + 86400000)), label: '明天<br>'+formatDisplayDate(new Date(today.getTime() + 86400000)) },
-            { date: formatDate(new Date(today.getTime() + 86400000 * 2)), label: '+2天<br>'+formatDisplayDate(new Date(today.getTime() + 86400000 * 2)) },
-            { date: formatDate(new Date(today.getTime() + 86400000 * 3)), label: '+3天<br>'+formatDisplayDate(new Date(today.getTime() + 86400000 * 3)) },
-            { date: formatDate(new Date(today.getTime() + 86400000 * 4)), label: '+4天<br>'+formatDisplayDate(new Date(today.getTime() + 86400000 * 4)) },
-            { date: formatDate(new Date(today.getTime() + 86400000 * 5)), label: '+5天<br>'+formatDisplayDate(new Date(today.getTime() + 86400000 * 5)) },
-            { date: formatDate(new Date(today.getTime() + 86400000 * 6)), label: '+6天<br>'+formatDisplayDate(new Date(today.getTime() + 86400000 * 6)) },
-            { date: formatDate(new Date(today.getTime() + 86400000 * 7)), label: '+7天<br>'+formatDisplayDate(new Date(today.getTime() + 86400000 * 7)) },
-            { date: formatDate(new Date(today.getTime() + 86400000 * 8)), label: '+8天<br>'+formatDisplayDate(new Date(today.getTime() + 86400000 * 8)) },
-            { date: formatDate(new Date(today.getTime() + 86400000 * 9)), label: '+9天<br>'+formatDisplayDate(new Date(today.getTime() + 86400000 * 9)) },
+            { date: formatDate(today), label: '今天<br>' + formatDisplayDate(today) },
+            { date: formatDate(new Date(today.getTime() + 86400000)), label: '明天<br>' + formatDisplayDate(new Date(today.getTime() + 86400000)) },
+            { date: formatDate(new Date(today.getTime() + 86400000 * 2)), label: '+2天<br>' + formatDisplayDate(new Date(today.getTime() + 86400000 * 2)) },
+            { date: formatDate(new Date(today.getTime() + 86400000 * 3)), label: '+3天<br>' + formatDisplayDate(new Date(today.getTime() + 86400000 * 3)) },
+            { date: formatDate(new Date(today.getTime() + 86400000 * 4)), label: '+4天<br>' + formatDisplayDate(new Date(today.getTime() + 86400000 * 4)) },
+            { date: formatDate(new Date(today.getTime() + 86400000 * 5)), label: '+5天<br>' + formatDisplayDate(new Date(today.getTime() + 86400000 * 5)) },
+            { date: formatDate(new Date(today.getTime() + 86400000 * 6)), label: '+6天<br>' + formatDisplayDate(new Date(today.getTime() + 86400000 * 6)) },
+            { date: formatDate(new Date(today.getTime() + 86400000 * 7)), label: '+7天<br>' + formatDisplayDate(new Date(today.getTime() + 86400000 * 7)) },
+            { date: formatDate(new Date(today.getTime() + 86400000 * 8)), label: '+8天<br>' + formatDisplayDate(new Date(today.getTime() + 86400000 * 8)) },
+            { date: formatDate(new Date(today.getTime() + 86400000 * 9)), label: '+9天<br>' + formatDisplayDate(new Date(today.getTime() + 86400000 * 9)) },
         ];
         const container = document.querySelector('.shift-container');
         // 创建表格结构
@@ -186,14 +189,14 @@
                     <td class="time-slot">${slot}</td>
                     <td class="shift-order-slot" 
                          data-date="${(() => {
-                             const baseDate = new Date(dateInfo.date);
-                             // Use the correct time slot variable (assuming it's called 'timeSlot')
-                             const [hours] = slot.split(':').map(Number);
-                             if (hours < 8) {
-                                 baseDate.setDate(baseDate.getDate() + 1);
-                             }
-                             return formatDate(baseDate);
-                         })()}" 
+                    const baseDate = new Date(dateInfo.date);
+                    // Use the correct time slot variable (assuming it's called 'timeSlot')
+                    const [hours] = slot.split(':').map(Number);
+                    if (hours < 8) {
+                        baseDate.setDate(baseDate.getDate() + 1);
+                    }
+                    return formatDate(baseDate);
+                })()}" 
                          data-shift="${shift}" 
                          data-time-slot="${slot}" 
                          data-slot-index="${offsetIndex + localIndex}"></td> <!-- 添加索引标识 -->
@@ -269,7 +272,10 @@
 
                 // 3. 创建工单元素（保持原高度计算方式）
                 const orderElement = document.createElement('div');
-                orderElement.className = 'order-item';
+                //orderElement.className = 'order-item';
+                const baseClass = 'order-item';
+            const ygdClass = order.is_ygd === 1 ? 'ygd-order' : '';
+            orderElement.className = [baseClass, ygdClass].filter(Boolean).join(' ');
                 orderElement.dataset.orderNo = orderNo;
                 orderElement.dataset.gsxs = orderDuration;
                 orderElement.style.height = calculateOrderHeight(orderDuration);
@@ -360,7 +366,7 @@
                     const itemEl = evt.item;
                     const target = evt.to;
                     const planDate = target.getAttribute('data-date');
-                
+
                     // 构建确认消息
                     const confirmMessage = `确定要将工单${orderNo}排产到${planDate} ${startTime}吗？`;
                     if (!confirm(confirmMessage)) {
@@ -415,7 +421,7 @@
                         startDateTime.setTime(startDateTime.getTime() + totalMinutes * 60 * 1000);
                         console.log('计算后的时间：', startDateTime);
                         const jhwgrq = formatDate(startDateTime);
-                        console.log('计算后的完工日期',jhwgrq);
+                        console.log('计算后的完工日期', jhwgrq);
                         const jhwgsj = `${startDateTime.getHours().toString().padStart(2, '0')}:${startDateTime.getMinutes().toString().padStart(2, '0')}`;
 
                         // 调用排产API

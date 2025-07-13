@@ -97,6 +97,58 @@ def order_data(order_no):
         return jsonify({"error": "订单不存在"}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+
+# 预约工单页面
+@app.route('/appointment_order')
+def appointment_order_page():
+    return render_template('appointment_order.html')
+
+# 获取预约工单数据
+@app.route('/api/appointment_orders')
+def get_appointment_orders():
+    # 获取查询参数
+    khmc = request.args.get('khmc')
+    ywy = request.args.get('ywy')
+    jhrq = request.args.get('jhrq')
+    yygdh = request.args.get('yygdh')
     
+    service = ProductionOrderService()
+    orders = service.get_appointment_orders(khmc, ywy, jhrq, yygdh)
+    return jsonify(orders)
+
+# 添加预约工单
+@app.route('/api/appointment_orders', methods=['POST'])
+def add_appointment_order():
+    data = request.json
+    service = ProductionOrderService()
+    result = service.add_appointment_order(data)
+    return jsonify(result)
+
+# 更新预约工单
+@app.route('/api/appointment_orders/<yygdh>', methods=['PUT'])
+def update_appointment_order(yygdh):
+    data = request.json
+    service = ProductionOrderService()
+    result = service.update_appointment_order(yygdh, data)
+    return jsonify(result)
+
+# 删除预约工单
+@app.route('/api/appointment_orders/delete', methods=['POST'])
+def delete_appointment_orders():
+    data = request.json
+    ids = data.get('ids', [])
+    service = ProductionOrderService()
+    result = service.delete_appointment_orders(ids)
+    return jsonify(result)
+
+# 获取单个预约工单详情 暂时无详情页
+@app.route('/api/appointment_orders/<yygdh>')
+def get_appointment_order_detail(yygdh):
+    service = ProductionOrderService()
+    order = service.get_appointment_order_detail(yygdh)
+    return jsonify(order)
+
 if __name__ == '__main__':
     app.run(debug=True,port=5003)
