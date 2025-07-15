@@ -47,7 +47,8 @@ class ProductionOrderService:
                 WHERE a.GDJHZT = '待排产'
                 and nvl(a.is_deleted, 0) <> 1
                 and (b.GXDL = 'BL' or c.gxdl = '落料')
-                order by nvl(a.JHRQ, a.GDJHQ),a.jhsj,a.gy,a.bm,a.pzdl
+                and nvl(b.jgdw,'N') = 'N'
+                order by nvl(a.JHRQ, a.GDJHQ),a.gy,a.bm,a.pzdl,a.jhsj
         """
         self.cursor.execute(query)
         columns = [col[0].lower() for col in self.cursor.description]
@@ -109,7 +110,7 @@ class ProductionOrderService:
             update_sql = """
             UPDATE A_PC_SCGDWH_TAB
             SET GDJHZT = '已排产', JHKSRQ = :plan_date, BC = :shift, JHKSSJ = :start_time, JHWGRQ = :jhwgrq, JHWGSJ = :jhwgsj
-            WHERE SCGDH = :order_no and GDJHZT = '待排产'
+            WHERE SCGDH = :order_no
             """
             self.cursor.execute(
                 update_sql,
@@ -234,8 +235,8 @@ class ProductionOrderService:
                    a.pzdl pzdl,
                    a.gy gy,
                    a.bm bm,
-                   t.sdjhh sdgx,
-                   t.xdjhh xdgx,
+                   nvl(t.sdjhh, a.sdgx) sdgx,
+                   nvl(t.xdjhh, a.xdgx) xdgx,
                    a.ylkw ylkw,
                    t.jhtlsl ylzs,
                    t.jhtll ylzl,

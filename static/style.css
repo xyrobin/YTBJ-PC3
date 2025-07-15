@@ -430,7 +430,7 @@ html {
 .process-tooltip {
     display: none;
     position: absolute;
-    bottom: -125%;
+    /* bottom: -125%; */
     width: 60%;
     left: 40%;
     background: rgba(0,0,0,0.6);
@@ -943,8 +943,9 @@ h1{
 
 /* 紧急工单样式 */
 .order-item.ygd-order {
-    /* background-color: #f7e3e6; 粉色背景 */
-    border: 3px solid #ff69b4; /* 加深边框颜色 */
+    background-color: #fff5f7;  /*粉色背景 */
+    /* border: 3px solid #ff69b4; 加深边框颜色 */
+
 }
 
 /* 预约工单详情页样式 */

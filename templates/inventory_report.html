@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}库存超期汇总报表{% endblock %}
+{% block content %}
+
+<div class="content-header">
+    <h1>库存超期汇总报表</h1>
+</div>
+
+<div class="report-container">
+    <iframe src="http://192.168.0.100:8080/webroot/decision/view/report?viewlet=%25E5%25BA%2593%25E5%25AD%2598%25E5%25BA%2593%25E9%25BE%2584%25E7%259C%258B%25E6%259D%25BF%252F%25E5%25BA%2593%25E5%25AD%2598%25E8%25B6%2585%25E6%259C%259F%25E6%25B1%2587%25E6%2580%25BB.cpt&ref_t=design&op=view&ref_c=bf12e28a-aaab-4147-87e1-f615597061b9" 
+            width="100%" 
+            height="800px" 
+            frameborder="0" 
+            scrolling="auto"></iframe>
+</div>
+
+<style>
+    .report-container {
+        margin: 20px;
+        padding: 15px;
+        background-color: #fff;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+</style>
+
+{% endblock %}

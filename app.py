@@ -190,7 +190,7 @@ def get_appointment_order_detail(yygdh):
     order = service.get_appointment_order_detail(yygdh)
     return jsonify(order)
 
-#预约工单绑定生产工单
+#预约工单绑定生产工单API
 @app.route('/api/appointment_orders/<yygdh>/bind', methods=['POST'])
 def bind_appointment_order(yygdh):
     try:
@@ -208,7 +208,7 @@ def bind_appointment_order(yygdh):
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
-# 预约工单取消
+# 预约工单取消API
 @app.route('/api/appointment_orders/<yygdh>/cancel', methods=['POST'])
 def cancel_appointment_order(yygdh):
     try:
@@ -221,7 +221,10 @@ def cancel_appointment_order(yygdh):
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
-
+# 尝试打开报表页面
+@app.route('/inventory_report')
+def inventory_report():
+    return render_template('inventory_report.html')
         
 if __name__ == '__main__':
     app.run(debug=True,port=5003)

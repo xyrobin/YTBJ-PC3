@@ -441,14 +441,18 @@
                         }
 
                         //提交确认提醒
-                        //const confirmMessage = `确定要将工单${orderNo}排产到${date} ${startTime}吗？`;
-                        // const confirmMessage = `jhrq:【${jhrq}】,jhsj:【${jhsj}】,endDateTime:【${endDateTime}】   latestEndTime:【${latestEndTime}】
-                        // date:【${date}】,startTime:【${startTime}】,startDateTime:【${startDateTime}】,earliestStartTime:【${earliestStartTime}】`;
-                        // if (!confirm(confirmMessage)) {
-                        //     // 用户取消，将工单移回原位置
-                        //     evt.from.appendChild(itemEl);
-                        //     return;
-                        // }
+                        // const confirmMessage = `工单交货时间：jhrq:【${jhrq}】,jhsj:【${jhsj}】,latestEndTime:【${latestEndTime}】
+                        // 工单最早开始时间：zzscrq:【${zzscrq}】,zzscsj:【${zzscsj}】,earliestStartTime:【${earliestStartTime}】
+                        // 排产时间：date:【${date}】,startTime:【${startTime}】,startDateTime:【${startDateTime}】
+                        // 计划完工时间：jhwgrq:【${jhwgrq}】,jhwgsj:【${jhwgsj}】,endDateTime:【${endDateTime}】
+                        // 调用参数：order_no: 【${orderNo}】, plan_date: 【${date}】, shift: 【${shift}】,  start_time: 【${startTime}】, jhwgrq: 【${jhwgrq}】,  // 计划完工日期 jhwgsj: 【${jhwgsj}】 
+                        // `;
+
+                        if (!confirm(confirmMessage)) {
+                            // 用户取消，将工单移回原位置
+                            evt.from.appendChild(itemEl);
+                            return;
+                        }
 
 
 
