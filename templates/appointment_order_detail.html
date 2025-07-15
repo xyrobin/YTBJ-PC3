@@ -1,0 +1,384 @@
+{% extends 'base.html' %}
+{% block title %}智慧排产中心-预约工单详情{% endblock %}
+{% block content %}
+
+<style>
+    .status-normal {
+        background-color: #d4edda;
+        padding: 2px 5px;
+        border-radius: 3px;
+    }
+
+    .status-invalid {
+        background-color: #f8d7da;
+        padding: 2px 5px;
+        border-radius: 3px;
+    }
+
+    .schedule-pending {
+        background-color: #fff3cd;
+        padding: 2px 5px;
+        border-radius: 3px;
+    }
+
+    .schedule-scheduled {
+        background-color: #d4edda;
+        padding: 2px 5px;
+        border-radius: 3px;
+    }
+</style>
+
+<div class="content-header">
+    <h1>预约工单详情</h1>
+    <div class="action-buttons">
+        <button id="back-btn" class="btn btn-primary">返回列表</button>
+        <button id="bind-btn" class="btn btn-success" disabled>工单绑定</button>
+        <button id="cancel-btn" class="btn btn-danger" disabled>预约取消</button>
+    </div>
+</div>
+
+<!-- 工单绑定模态框 -->
+<div id="bind-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn">&times;</span>
+        <h2>工单绑定</h2>
+        <form id="bind-form">
+            <input type="hidden" id="bind-yygdh">
+            <div class="form-group">
+                <label>生产工单号:</label>
+                <input type="text" id="bind-scgdh" required>
+            </div>
+            <button type="submit" class="btn btn-submit">保存</button>
+        </form>
+    </div>
+</div>
+
+<div class="detail-container">
+    <div class="detail-card">
+        <div class="detail-body">
+            <div class="detail-row">
+                <div class="detail-item">
+                    <span class="label">预约工单号:</span>
+                    <span id="yygdh" class="value"></span>
+                </div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-item">
+                    <span class="label">状态:</span>
+                    <span id="is_deleted" class="value"></span>
+                </div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-item">
+                    <span class="label">生产工单号:</span>
+                    <span id="scgdh" class="value"></span>
+                </div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-item">
+                    <span class="label">排产状态:</span>
+                    <span id="gdjhzt" class="value"></span>
+                </div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-item">
+                    <span class="label">排产时间:</span>
+                    <span id="jhksrq" class="value"></span>
+                    <span id="jhkssj" class="value"></span>
+                </div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-item">
+                    <span class="label">客户名称:</span>
+                    <span id="khmc" class="value"></span>
+                </div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-item">
+                    <span class="label">业务员:</span>
+                    <span id="ywy" class="value"></span>
+                </div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-item">
+                    <span class="label">交货日期:</span>
+                    <span id="jhrq" class="value"></span>
+                    <span id="jhsj" class="value"></span>
+                </div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-item">
+                    <span class="label">工序大类:</span>
+                    <span id="gxdl" class="value"></span>
+                </div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-item">
+                    <span class="label">品种大类:</span>
+                    <span id="pzdl" class="value"></span>
+                </div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-item">
+                    <span class="label">最早生产日期:</span>
+                    <span id="zzscrq" class="value"></span>
+                    <span id="zzscsj" class="value"></span>
+                </div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-item">
+                    <span class="label">规格:</span>
+                    <span id="gg" class="value"></span>
+                </div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-item">
+                    <span class="label">原料张数:</span>
+                    <span id="ylzs" class="value"></span>
+                </div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-item">
+                    <span class="label">原料重量:</span>
+                    <span id="ylzl" class="value"></span>
+                </div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-item">
+                    <span class="label">产品张数:</span>
+                    <span id="cpzs" class="value"></span>
+                </div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-item">
+                    <span class="label">工时:</span>
+                    <span id="gs" class="value"></span>
+                </div>
+            </div>
+
+            <div class="detail-row">
+                <div class="detail-item full-width">
+                    <span class="label">预约原因和备注:</span>
+                    <span id="jhbz" class="value"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    window.onload = function () {
+        // 获取URL参数中的工单号
+        const urlParams = new URLSearchParams(window.location.search);
+        const yygdh = urlParams.get('yygdh');
+        if (!yygdh) {
+            alert('未找到工单信息');
+            window.location.href = '/appointment_order';
+            return;
+        }
+
+        // 加载工单详情
+        loadOrderDetail(yygdh);
+
+        // 返回按钮事件
+        document.getElementById('back-btn').addEventListener('click', function () {
+            window.location.href = '/appointment_order';
+        });
+
+        // 预约取消按钮点击事件
+        document.getElementById('cancel-btn').addEventListener('click', function () {
+            if (confirm('确定要取消此预约工单吗？')) {
+                cancelAppointmentOrder(yygdh);
+            }
+        });
+
+        // 工单绑定按钮点击事件
+        document.getElementById('bind-btn').addEventListener('click', function () {
+            document.getElementById('bind-yygdh').value = yygdh;
+            document.getElementById('bind-scgdh').value = '';
+            openBindModal();
+        });
+
+        // 关闭模态框事件
+        document.querySelector('#bind-modal .close-btn').addEventListener('click', closeBindModal);
+
+        // 点击模态框外部关闭
+        window.addEventListener('click', function (event) {
+            const modal = document.getElementById('bind-modal');
+            if (event.target == modal) {
+                closeBindModal();
+            }
+        });
+
+        // 绑定表单提交事件
+        document.getElementById('bind-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+            saveBindInfo();
+        });
+    };
+
+    // 加载工单详情数据
+    function loadOrderDetail(yygdh) {
+        showLoading();
+        fetch(`/api/appointment_orders/${yygdh}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('网络响应不正常');
+                }
+                return response.json();
+            })
+            .then(order => {
+                // 填充详情数据
+                document.getElementById('yygdh').textContent = order.yygdh || '';
+                document.getElementById('scgdh').textContent = order.scgdh || '';
+                document.getElementById('khmc').textContent = order.khmc || '';
+                document.getElementById('ywy').textContent = order.ywy || '';
+                document.getElementById('jhrq').textContent = order.jhrq || '';
+                document.getElementById('jhsj').textContent = order.jhsj || '';
+                document.getElementById('gxdl').textContent = order.gxdl || '';
+                document.getElementById('pzdl').textContent = order.pzdl || '';
+                document.getElementById('zzscrq').textContent = order.zzscrq || '';
+                document.getElementById('zzscsj').textContent = order.zzscsj || '';
+                document.getElementById('gg').textContent = order.gg || '';
+                document.getElementById('ylzs').textContent = order.ylzs || '';
+                document.getElementById('ylzl').textContent = order.ylzl || '';
+                document.getElementById('cpzs').textContent = order.cpzs || '';
+                document.getElementById('gs').textContent = order.gs || '';
+                document.getElementById('gdjhzt').textContent = order.gdjhzt || '';
+                document.getElementById('jhksrq').textContent = order.jhksrq || '';
+                document.getElementById('jhkssj').textContent = order.jhkssj || '';
+                document.getElementById('jhbz').textContent = order.jhbz || '';
+                document.getElementById('is_deleted').textContent = order.is_deleted || '';
+
+
+                const statusElement = document.getElementById('is_deleted');
+                statusElement.textContent = order.is_deleted || '';
+                statusElement.classList.remove('status-normal', 'status-invalid');
+                if (order.is_deleted === '正常') {
+                    statusElement.classList.add('status-normal');
+                } else if (order.is_deleted === '失效') {
+                    statusElement.classList.add('status-invalid');
+                }
+
+                // 设置排产状态样式
+                const scheduleElement = document.getElementById('gdjhzt');
+                scheduleElement.textContent = order.gdjhzt || '';
+                scheduleElement.classList.remove('schedule-pending', 'schedule-scheduled');
+                if (order.gdjhzt === '待排产') {
+                    scheduleElement.classList.add('schedule-pending');
+                } else if (order.gdjhzt === '已排产') {
+                    scheduleElement.classList.add('schedule-scheduled');
+                }
+
+                // 控制工单绑定按钮状态
+                const bindBtn = document.getElementById('bind-btn');
+                // 状态为正常且生产工单号为空时启用按钮
+                if (order.is_deleted === '正常' && !order.scgdh) {
+                    bindBtn.disabled = false;
+                } else {
+                    bindBtn.disabled = true;
+                }
+
+                // 控制预约取消按钮状态
+                const cancelBtn = document.getElementById('cancel-btn');
+                // 状态为正常且排产状态为待排产时启用按钮
+                if (order.is_deleted === '正常' && order.gdjhzt === '待排产') {
+                    cancelBtn.disabled = false;
+                } else {
+                    cancelBtn.disabled = true;
+                }
+
+                hideLoading();
+            })
+            .catch(error => {
+                console.error('加载工单详情失败:', error);
+                alert('加载工单详情失败: ' + error.message);
+                hideLoading();
+            });
+    }
+
+    // 打开绑定模态框
+    function openBindModal() {
+        document.getElementById('bind-modal').style.display = 'block';
+    }
+
+    // 关闭绑定模态框
+    function closeBindModal() {
+        document.getElementById('bind-modal').style.display = 'none';
+    }
+
+    // 保存绑定信息
+    function saveBindInfo() {
+        const yygdh = document.getElementById('bind-yygdh').value;
+        const scgdh = document.getElementById('bind-scgdh').value;
+
+        if (!scgdh.trim()) {
+            alert('请输入生产工单号');
+            return;
+        }
+
+        showLoading();
+        fetch(`/api/appointment_orders/${yygdh}/bind`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ scgdh: scgdh })
+        })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    closeBindModal();
+                    alert('工单绑定成功!');
+                    // 重新加载工单详情
+                    loadOrderDetail(yygdh);
+                } else {
+                    alert('绑定失败: ' + (result.message || '未知错误'));
+                }
+                hideLoading();
+            })
+            .catch(error => {
+                console.error('绑定失败:', error);
+                alert('绑定失败: ' + error.message);
+                hideLoading();
+            });
+    }
+
+    // 加载中显示
+    function showLoading() {
+        const loading = document.createElement('div');
+        loading.id = 'loading';
+        loading.innerHTML = '<div class="spinner"></div><div>加载中...</div>';
+        document.body.appendChild(loading);
+    }
+
+    // 隐藏加载中
+    function hideLoading() {
+        const loading = document.getElementById('loading');
+        if (loading) loading.remove();
+    }
+
+    // 取消预约工单
+    function cancelAppointmentOrder(yygdh) {
+        showLoading();
+        fetch(`/api/appointment_orders/${yygdh}/cancel`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    alert('预约工单取消成功!');
+                    // 重新加载工单详情
+                    loadOrderDetail(yygdh);
+                } else {
+                    alert('取消失败: ' + (result.message || '未知错误'));
+                }
+                hideLoading();
+            })
+            .catch(error => {
+                console.error('取消失败:', error);
+                alert('取消失败: ' + error.message);
+                hideLoading();
+            });
+    }
+</script>
+{% endblock %}

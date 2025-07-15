@@ -13,7 +13,7 @@ class ProductionOrderService:
         # 排产-获取所有待排产工单（状态=待排产）并按最早生产日期升序排序
         query = """
                 SELECT a.SCGDH,
-                    a.GSXS,
+                    nvl(a.TZGS,a.GSXS) GSXS,
                     a.JHKSRQ,
                     a.JHKSSJ,
                     a.BC,
@@ -47,6 +47,7 @@ class ProductionOrderService:
                 WHERE a.GDJHZT = '待排产'
                 and nvl(a.is_deleted, 0) <> 1
                 and (b.GXDL = 'BL' or c.gxdl = '落料')
+                order by nvl(a.JHRQ, a.GDJHQ),a.jhsj,a.gy,a.bm,a.pzdl
         """
         self.cursor.execute(query)
         columns = [col[0].lower() for col in self.cursor.description]
@@ -56,7 +57,7 @@ class ProductionOrderService:
         # 排产-获取所有已排产工单（状态=已排产）
         query = """
                 SELECT a.SCGDH,
-                    a.GSXS,
+                    nvl(a.TZGS,a.GSXS) GSXS,
                     a.JHKSRQ,
                     a.JHKSSJ,
                     a.BC,
@@ -95,7 +96,7 @@ class ProductionOrderService:
         columns = [col[0].lower() for col in self.cursor.description]
         return [dict(zip(columns, row)) for row in self.cursor.fetchall()]
 
-    def schedule_order(self, order_no, plan_date, shift, start_time,jhwgrq, jhwgsj):
+    def schedule_order(self, order_no, plan_date, shift, start_time, jhwgrq, jhwgsj):
         # 排产-更新工单状态为已排产
         try:
             # 检查班次是否合法
@@ -108,7 +109,7 @@ class ProductionOrderService:
             update_sql = """
             UPDATE A_PC_SCGDWH_TAB
             SET GDJHZT = '已排产', JHKSRQ = :plan_date, BC = :shift, JHKSSJ = :start_time, JHWGRQ = :jhwgrq, JHWGSJ = :jhwgsj
-            WHERE SCGDH = :order_no
+            WHERE SCGDH = :order_no and GDJHZT = '待排产'
             """
             self.cursor.execute(
                 update_sql,
@@ -118,7 +119,7 @@ class ProductionOrderService:
                     "start_time": start_time,
                     "order_no": order_no,
                     "jhwgrq": jhwgrq,
-                    "jhwgsj": jhwgsj
+                    "jhwgsj": jhwgsj,
                 },
             )
             self.connection.commit()
@@ -133,7 +134,7 @@ class ProductionOrderService:
             update_sql = """
             UPDATE A_PC_SCGDWH_TAB
             SET GDJHZT = '待排产', JHKSRQ = NULL, BC = NULL, JHKSSJ = NULL, JHWGRQ = NULL, JHWGSJ = NULL
-            WHERE SCGDH = :order_no
+            WHERE SCGDH = :order_no and GDJHZT = '已排产'
             """
             self.cursor.execute(update_sql, {"order_no": order_no})
             self.connection.commit()
@@ -142,18 +143,47 @@ class ProductionOrderService:
             self.connection.rollback()
             return {"success": False, "message": str(e)}
 
-    def get_all_orders(self):
-        # 工单维护-获取所有工单数据
+    def get_all_orders(self, scgdh=None, gdjhzt=None, jhrq=None, ywy=None, jhksrq=None, khmc=None, gg=None):
+        # 工单维护-获取所有工单数据，支持筛选
         query = """
-        SELECT a.SCGDH, nvl(a.JHRQ, a.GDJHQ) JHRQ, JHSJ, YWY, YLKW, GSXS, JHKSRQ, JHKSSJ, BC, ZZSCRQ, ZZSCSJ, GDJHZT
+        SELECT a.SCGDH, nvl(a.JHRQ, a.GDJHQ) JHRQ, JHSJ, YWY, YLKW, nvl(a.TZGS,a.GSXS) GSXS, 
+               JHKSRQ, JHKSSJ, BC, ZZSCRQ, ZZSCSJ, GDJHZT
             FROM A_PC_SCGDWH_TAB a
             left join A_RG_PRODUCTION_BILL_INTEGRATED_TAB b
                 on a.scgdh = b.scgdh
             where b.gxdl = 'BL'
             and a.scgdh is not null
-            ORDER BY SCGDH
+            and nvl(a.is_deleted, 0) <> 1
         """
-        self.cursor.execute(query)
+        
+        params = {}
+        
+        # 添加筛选条件
+        if scgdh:
+            query += " AND a.SCGDH LIKE :scgdh"
+            params["scgdh"] = f"%{scgdh}%"
+        if gdjhzt:
+            query += " AND a.GDJHZT = :gdjhzt"
+            params["gdjhzt"] = gdjhzt
+        if jhrq:
+            query += " AND nvl(a.JHRQ, a.GDJHQ) = :jhrq"
+            params["jhrq"] = jhrq
+        if ywy:
+            query += " AND a.YWY LIKE :ywy"
+            params["ywy"] = f"%{ywy}%"
+        if jhksrq:
+            query += " AND a.JHKSRQ = :jhksrq"
+            params["jhksrq"] = jhksrq
+        if khmc:
+            query += " AND b.KHMC LIKE :khmc"
+            params["khmc"] = f"%{khmc}%"
+        if gg:
+            query += " AND b.QGGGMS LIKE :gg"
+            params["gg"] = f"%{gg}%"
+        
+        query += " ORDER BY jhrq"
+        
+        self.cursor.execute(query, params)
         columns = [col[0].lower() for col in self.cursor.description]
         return [dict(zip(columns, row)) for row in self.cursor.fetchall()]
 
@@ -163,7 +193,8 @@ class ProductionOrderService:
             update_sql = """
             UPDATE A_PC_SCGDWH_TAB
             SET JHRQ = :jhrq, JHSJ = :jhsj, ZZSCRQ = :zzscrq, ZZSCSJ = :zzscsj,jhbz = :jhbz
-            WHERE SCGDH = :scgdh
+            WHERE SCGDH = :scgdh and GDJHZT = '待排产'
+            and nvl(is_deleted, 0) <> 1
             """
             self.cursor.execute(
                 update_sql,
@@ -173,15 +204,15 @@ class ProductionOrderService:
                     "zzscrq": order_data.get("zzscrq"),
                     "zzscsj": order_data.get("zzscsj"),
                     "scgdh": order_data.get("scgdh"),
-                    "jhbz": order_data.get("jhbz")
+                    "jhbz": order_data.get("jhbz"),
                 },
             )
             self.connection.commit()
-            print('更新成功');
+            print("更新成功")
             return {"success": True}
         except Exception as e:
             self.connection.rollback()
-            print('更新失败:', str(e));
+            print("更新失败:", str(e))
             return {"success": False, "message": str(e)}
 
     def __del__(self):
@@ -190,9 +221,8 @@ class ProductionOrderService:
         if hasattr(self, "connection") and self.connection:
             self.connection.close()
 
-
     def get_order_details(self, order_no):
-        #工单详情页查询
+        # 工单详情页查询
         sql = """
             select t.scgdh scgdh,
                    nvl(jgdwdm, '厂内') jgdw,
@@ -210,7 +240,7 @@ class ProductionOrderService:
                    t.jhtlsl ylzs,
                    t.jhtll ylzl,
                    t.jhyjzs cpzs,
-                   a.gsxs gs,
+                   nvl(a.TZGS,a.GSXS) gs,
                    t.khmc khmc,
                    a.ywy ywy,
                    a.gdjhq gdjhq,
@@ -234,39 +264,69 @@ class ProductionOrderService:
               left join A_PC_SCGDWH_TAB a
                 on t.scgdh = a.scgdh
              where t.scgdh = :order_no
+             and nvl(a.is_deleted, 0) <> 1
         """
         # return self.cursor.execute(sql, (order_no,)).fetchone()
-        self.cursor.execute(sql, {'ORDER_NO': order_no})
+        self.cursor.execute(sql, {"ORDER_NO": order_no})
         columns = [col[0].lower() for col in self.cursor.description]
         return [dict(zip(columns, row)) for row in self.cursor.fetchall()]
 
 
 
-
-
     # 预约工单处理：
-    def get_appointment_orders(self, khmc=None, ywy=None, jhrq=None, yygdh=None):
+    def get_appointment_orders(self, khmc=None, ywy=None, jhrq=None, yygdh=None,scgdh=None,is_deleted=None,gdjhzt=None):
         # 查询预约工单数据
         query = """
-            SELECT YYGDH, SCGDH, JHRQ, JHSJ, GXDL, KHMC, YWY, ZZSCRQ, ZZSCSJ, GG, YLZS, YLZL, CPZS, JHBZ, PZDL
-            FROM A_PC_YYGD_TAB
-            WHERE 1=1
+            SELECT a.YYGDH,
+                    a.SCGDH,
+                    a.JHRQ,
+                    a.JHSJ,
+                    a.GXDL,
+                    a.PZDL,
+                    a.KHMC,
+                    a.YWY,
+                    a.ZZSCRQ,
+                    a.ZZSCSJ,
+                    a.GG,
+                    a.YLZS,
+                    a.YLZL,
+                    a.CPZS,
+                    a.JHBZ,
+                    b.gdjhzt,
+                    nvl(b.tzgs, b.gsxs) gs,
+                    b.jhksrq,
+                    b.jhkssj，
+                    decode(b.is_deleted, 0, '正常', '失效') is_deleted
+                FROM A_PC_YYGD_TAB a
+                left join A_PC_SCGDWH_TAB b
+                    on a.yygdh = b.scgdh
+                where 1=1
         """
         params = {}
-        
+
         # 添加查询条件
         if khmc:
-            query += " AND KHMC LIKE :khmc"
+            query += " AND a.KHMC LIKE :khmc"
             params["khmc"] = f"%{khmc}%"
         if ywy:
-            query += " AND YWY LIKE :ywy"
+            query += " AND a.YWY LIKE :ywy"
             params["ywy"] = f"%{ywy}%"
         if jhrq:
-            query += " AND JHRQ = :jhrq"
+            query += " AND a.JHRQ = :jhrq"
             params["jhrq"] = jhrq
         if yygdh:
-            query += " AND YYGDH LIKE :yygdh"
+            query += " AND a.YYGDH LIKE :yygdh"
             params["yygdh"] = f"%{yygdh}"
+        if scgdh:
+            query += " AND a.SCGDH LIKE :scgdh"
+            params["scgdh"] = f"%{scgdh}"
+        if is_deleted:
+            query += " AND b.is_deleted = :is_deleted"
+            params["is_deleted"] = is_deleted
+        if gdjhzt:
+            query += " AND b.gdjhzt = :gdjhzt"
+            params["gdjhzt"] = gdjhzt
+        query += " order by a.YYGDH desc"
 
         self.cursor.execute(query, params)
         columns = [col[0].lower() for col in self.cursor.description]
@@ -284,23 +344,25 @@ class ProductionOrderService:
                     :zzscrq, :zzscsj, :gg, :ylzs, :ylzl, :cpzs, :jhbz, :pzdl
                 )
             """
-            
-            
-            self.cursor.execute(insert_sql, {
-                "jhrq": order_data["jhrq"],
-                "jhsj": order_data["jhsj"],
-                "gxdl": order_data["gxdl"],
-                "khmc": order_data["khmc"],
-                "ywy": order_data["ywy"],
-                "zzscrq": order_data["zzscrq"],
-                "zzscsj": order_data["zzscsj"],
-                "gg": order_data["gg"],
-                "ylzs": order_data["ylzs"],
-                "ylzl": order_data["ylzl"],
-                "cpzs": order_data["cpzs"],
-                "jhbz": order_data["jhbz"],
-                "pzdl": order_data["pzdl"]
-            })
+
+            self.cursor.execute(
+                insert_sql,
+                {
+                    "jhrq": order_data["jhrq"],
+                    "jhsj": order_data["jhsj"],
+                    "gxdl": order_data["gxdl"],
+                    "khmc": order_data["khmc"],
+                    "ywy": order_data["ywy"],
+                    "zzscrq": order_data["zzscrq"],
+                    "zzscsj": order_data["zzscsj"],
+                    "gg": order_data["gg"],
+                    "ylzs": order_data["ylzs"],
+                    "ylzl": order_data["ylzl"],
+                    "cpzs": order_data["cpzs"],
+                    "jhbz": order_data["jhbz"],
+                    "pzdl": order_data["pzdl"],
+                },
+            )
             self.connection.commit()
             return {"success": True, "yygdh": order_data["yygdh"]}
         except Exception as e:
@@ -311,31 +373,50 @@ class ProductionOrderService:
         # 更新预约工单
         try:
             update_sql = """
-                UPDATE A_PC_YYGD_TAB
-                SET SCGDH = :scgdh, JHRQ = :jhrq, JHSJ = :jhsj, 
-                    GXDL = :gxdl, KHMC = :khmc, YWY = :ywy, 
-                    ZZSCRQ = :zzscrq, ZZSCSJ = :zzscsj, 
-                    GG = :gg, YLZS = :ylzs, YLZL = :ylzl, CPZS = :cpzs, JHBZ = :jhbz, PZDL = :pzdl
-                WHERE YYGDH = :yygdh
-            """
-            
-            self.cursor.execute(update_sql, {
-                "scgdh": order_data["scgdh"],
-                "jhrq": order_data["jhrq"],
-                "jhsj": order_data["jhsj"],
-                "gxdl": order_data["gxdl"],
-                "khmc": order_data["khmc"],
-                "ywy": order_data["ywy"],
-                "zzscrq": order_data["zzscrq"],
-                "zzscsj": order_data["zzscsj"],
-                "gg": order_data["gg"],
-                "ylzs": order_data["ylzs"],
-                "ylzl": order_data["ylzl"],
-                "cpzs": order_data["cpzs"],
-                "jhbz": order_data["jhbz"],
-                "pzdl": order_data["pzdl"],
-                "yygdh": yygdh
-            })
+                UPDATE A_PC_YYGD_TAB a
+                    SET a.SCGDH  = :scgdh,
+                        a.JHRQ   = :jhrq,
+                        a.JHSJ   = :jhsj,
+                        a.GXDL   = :gxdl,
+                        a.KHMC   = :khmc,
+                        a.YWY    = :ywy,
+                        a.ZZSCRQ = :zzscrq,
+                        a.ZZSCSJ = :zzscsj,
+                        a.GG     = :gg,
+                        a.YLZS   = :ylzs,
+                        a.YLZL   = :ylzl,
+                        a.CPZS   = :cpzs,
+                        a.JHBZ   = :jhbz,
+                        a.PZDL   = :pzdl
+                    WHERE a.YYGDH = :yygdh
+                    and a.scgdh = ''
+                    AND EXISTS (SELECT 1
+                            FROM A_PC_SCGDWH_TAB b
+                            WHERE a.YYGDH = b.scgdh
+                            AND b.gdjhzt = '待排产'
+                            and nvl(b.is_deleted, 0) = 0);
+                                """
+
+            self.cursor.execute(
+                update_sql,
+                {
+                    "scgdh": order_data["scgdh"],
+                    "jhrq": order_data["jhrq"],
+                    "jhsj": order_data["jhsj"],
+                    "gxdl": order_data["gxdl"],
+                    "khmc": order_data["khmc"],
+                    "ywy": order_data["ywy"],
+                    "zzscrq": order_data["zzscrq"],
+                    "zzscsj": order_data["zzscsj"],
+                    "gg": order_data["gg"],
+                    "ylzs": order_data["ylzs"],
+                    "ylzl": order_data["ylzl"],
+                    "cpzs": order_data["cpzs"],
+                    "jhbz": order_data["jhbz"],
+                    "pzdl": order_data["pzdl"],
+                    "yygdh": yygdh,
+                },
+            )
             self.connection.commit()
             return {"success": True}
         except Exception as e:
@@ -347,10 +428,10 @@ class ProductionOrderService:
         try:
             if not ids or len(ids) == 0:
                 return {"success": False, "message": "没有选择要删除的记录"}
-                
-            delete_sql = f"DELETE FROM A_PC_YYGD_TAB WHERE YYGDH IN ({','.join([':id' + str(i) for i in range(len(ids))])})"
+
+            delete_sql = f"DELETE FROM A_PC_YYGD_TAB a WHERE a.YYGDH IN ({','.join([':id' + str(i) for i in range(len(ids))])}) and a.scgdh = '' AND EXISTS (SELECT 1  FROM A_PC_SCGDWH_TAB b WHERE a.YYGDH = b.scgdh AND b.gdjhzt = '待排产')"
             params = {f"id{i}": ids[i] for i in range(len(ids))}
-            
+
             self.cursor.execute(delete_sql, params)
             self.connection.commit()
             return {"success": True}
@@ -361,11 +442,98 @@ class ProductionOrderService:
     def get_appointment_order_detail(self, yygdh):
         # 获取单个预约工单详情
         query = """
-            SELECT YYGDH, SCGDH, JHRQ, JHSJ, GXDL, KHMC, YWY, ZZSCRQ, ZZSCSJ, GG, YLZS, YLZL, CPZS, JHBZ 
-            FROM A_PC_YYGD_TAB
-            WHERE YYGDH = :yygdh
+            SELECT a.YYGDH,
+                    a.SCGDH,
+                    a.JHRQ,
+                    a.JHSJ,
+                    a.GXDL,
+                    a.PZDL,
+                    a.KHMC,
+                    a.YWY,
+                    a.ZZSCRQ,
+                    a.ZZSCSJ,
+                    a.GG,
+                    a.YLZS,
+                    a.YLZL,
+                    a.CPZS,
+                    a.JHBZ,
+                    b.gdjhzt,
+                    nvl(b.tzgs, b.gsxs) gs,
+                    b.jhksrq,
+                    b.jhkssj,
+                    decode(b.is_deleted, 0, '正常', '失效') is_deleted
+                FROM A_PC_YYGD_TAB a
+                left join A_PC_SCGDWH_TAB b
+                    on a.yygdh = b.scgdh
+                WHERE  a.YYGDH = :yygdh
         """
         self.cursor.execute(query, {"yygdh": yygdh})
         columns = [col[0].lower() for col in self.cursor.description]
         result = self.cursor.fetchone()
         return dict(zip(columns, result)) if result else None
+
+    def update_order_gs(self, data):
+        try:
+            sql = "UPDATE A_PC_SCGDWH_TAB SET TZGS = :tzgs, GSTZYY = :gstzyy WHERE scgdh = :scgdh and GDJHZT = '待排产' "
+            self.cursor.execute(
+                sql,
+                {
+                    "tzgs": data.get("tzgs"),
+                    "gstzyy": data.get("gstzyy"),
+                    "scgdh": data.get("scgdh"),
+                },
+            )
+            # 打印实际执行的SQL语句和参数
+            print(f"执行的SQL语句: {sql}")
+            print(
+                f"使用的参数: {{{', '.join([f'{k}: {repr(v)}' for k, v in { 'tzgs': data.get('tzgs'), 'gstzyy': data.get('gstzyy'), 'scgdh': data.get('scgdh') }.items()])}}}"
+            )
+            self.connection.commit()
+            print("更新成功")
+            return {"success": True}
+        except Exception as e:
+            self.connection.rollback()
+            print("更新失败:", str(e))
+            return {"success": False, "message": str(e)}
+
+    # 预约工单绑定生产工单
+    def bind_appointment_order(self, yygdh, scgdh):
+        try:
+            print('预约工单绑定生产工单:',yygdh,scgdh)
+            # 检查生产工单号是否已存在
+            existing = self.cursor.execute(
+                "SELECT COUNT(*) as count FROM A_PC_SCGDWH_TAB WHERE scgdh = :scgdh AND gdjhzt = '待排产' and nvl(is_deleted, 0) = 0 AND yygdh is null ",
+                {"scgdh": scgdh},
+            )
+            print('检查生产工单数量1:',existing)
+            result = self.cursor.fetchone()  # 获取查询结果元组，格式如: (count_value,)
+            existing = result[0] if result else 0  # 使用索引访问元组元素
+            print('检查生产工单数量2:',existing)
+
+            if existing != 1:
+                return False
+
+            # 执行数据库绑定方法
+            self.cursor.callproc("A_YYGDBD", [yygdh, scgdh])
+            return True
+        except Exception as e:
+            print(f"绑定工单失败: {e}")
+            self.connection.rollback()
+            return False
+
+    def cancel_appointment_order(self, yygdh):
+        # 取消预约工单，设置is_deleted=1
+        try:
+            update_sql = """
+            UPDATE A_PC_SCGDWH_TAB
+            SET is_deleted = 1
+            WHERE scgdh = :yygdh AND gdjhzt = '待排产'
+            """
+            self.cursor.execute(update_sql, {'yygdh': yygdh})
+            self.connection.commit()
+            # 检查是否有记录被更新
+            return self.cursor.rowcount > 0
+        except Exception as e:
+            self.connection.rollback()
+            print(f"取消预约工单失败: {e}")
+            return False

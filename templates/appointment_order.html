@@ -1,10 +1,11 @@
 {% extends 'base.html' %}
+{% block title %}智慧排产中心-预约工单管理{% endblock %}
 {% block content %}
 <div class="content-header">
     <h1>预约工单管理</h1>
     <div class="action-buttons">
         <button id="add-btn" class="btn btn-primary">新增预约工单</button>
-        <button id="delete-btn" class="btn btn-danger" disabled>删除选中</button>
+        <!-- <button id="delete-btn" class="btn btn-danger" disabled>删除选中</button> -->
     </div>
 </div>
 
@@ -26,6 +27,27 @@
             <label>预约工单号:</label>
             <input type="text" name="yygdh" placeholder="请输入预约工单号">
         </div>
+        <div class="form-group">
+            <label>生产工单号:</label>
+            <input type="text" name="scgdh" placeholder="请输入生产工单号">
+        </div>
+        <div class="form-group">
+            <label>状态:</label>
+            <select name="is_deleted">
+                <option value="">请选择</option>
+                <option value="0">正常</option>
+                <option value="1">失效</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>排产状态:</label>
+            <select name="gdjhzt">
+                <option value="">请选择</option>
+                <option value="待排产">待排产</option>
+                <option value="已排产">已排产</option>
+            </select>
+        </div>
+
         <button type="submit" class="btn btn-search">查询</button>
         <button type="reset" class="btn btn-reset">重置</button>
     </form>
@@ -34,8 +56,10 @@
 <table class="data-table">
     <thead>
         <tr>
-            <th><input type="checkbox" id="select-all"></th>
+            <!-- <th><input type="checkbox" id="select-all"></th> -->
             <th>预约工单号</th>
+            <th>状态</th>
+            <th>排产状态</th>
             <th>生产工单号</th>
             <th>交货日期</th>
             <th>交货时间</th>
@@ -54,6 +78,18 @@
     </thead>
     <tbody id="order-table-body"></tbody>
 </table>
+
+<div style="margin-top: 20px; padding: 15px; background-color: #f5f5f5; border-radius: 5px; font-size: 14px;">
+  <p style="margin: 0 0 10px 0; font-weight: bold;">操作说明：</p>
+  <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
+    <li>双击表格行可打开预约工单详情页</li>
+    <li>预约工单可以参与排产，未被排产前可以取消预约工单，取消后的预约工单不可进行编辑、排产、取消、绑定等动作</li>
+    <li>绑定操作：当正式生产工单做好之后，需要尽快将预约工单和正式工单进行绑定。绑定后，预约工单的信息会被正式生产工单继承。如果预约工单已排产，排产信息会被正式工单集成，无需再对正式工单进行排产</li>
+    <li>绑定前提：正式生产工单未被排产，且预约工单处于正常状态</li>
+    <li>一个预约工单只能绑定一次生产工单，绑定后，预约工单状态将被置为失效，不可再进行编辑、排产、取消、绑定等动作，也无法再进行排产</li>
+    <li>新增预约工单的关键信息请保证与未来正式工单信息一致，避免排产出现偏差</li>
+  </ul>
+</div>
 
 <!-- 新增/编辑模态框 -->
 <div id="order-modal" class="modal">
@@ -156,8 +192,10 @@ function renderTable(orders) {
     orders.forEach(order => {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td><input type="checkbox" class="row-select" data-id="${order.yygdh}"></td>
-            <td>${order.yygdh}</td>
+            <!-- <td><input type="checkbox" class="row-select" data-id="${order.yygdh}"></td> -->
+            <td class="row-select" data-id="${order.yygdh}">${order.yygdh}</td>
+            <td>${order.is_deleted || ''}</td>
+            <td>${order.gdjhzt || ''}</td>
             <td>${order.scgdh || ''}</td>
             <td>${order.jhrq || ''}</td>
             <td>${order.jhsj || ''}</td>
@@ -188,19 +226,19 @@ function initEventListeners() {
     });
 
     // 全选/取消全选
-    document.getElementById('select-all').addEventListener('change', function(e) {
-        document.querySelectorAll('.row-select').forEach(checkbox => {
-            checkbox.checked = e.target.checked;
-        });
-        updateDeleteButtonState();
-    });
+    // document.getElementById('select-all').addEventListener('change', function(e) {
+    //     document.querySelectorAll('.row-select').forEach(checkbox => {
+    //         checkbox.checked = e.target.checked;
+    //     });
+    //     updateDeleteButtonState();
+    // });
 
     // 行选择变化时更新删除按钮状态
-    document.addEventListener('change', function(e) {
-        if (e.target.classList.contains('row-select')) {
-            updateDeleteButtonState();
-        }
-    });
+    // document.addEventListener('change', function(e) {
+    //     if (e.target.classList.contains('row-select')) {
+    //         updateDeleteButtonState();
+    //     }
+    // });
 
     // 新增按钮点击
     document.getElementById('add-btn').addEventListener('click', function() {
@@ -221,11 +259,11 @@ function initEventListeners() {
     });
 
     // 删除按钮点击
-    document.getElementById('delete-btn').addEventListener('click', function() {
-        if (confirm('确定要删除选中的预约工单吗?')) {
-            deleteSelectedOrders();
-        }
-    });
+    // document.getElementById('delete-btn').addEventListener('click', function() {
+    //     if (confirm('确定要删除选中的预约工单吗?')) {
+    //         deleteSelectedOrders();
+    //     }
+    // });
 
     // 表单提交
     document.getElementById('order-form').addEventListener('submit', function(e) {
@@ -235,31 +273,14 @@ function initEventListeners() {
 
     // 关闭模态框
     document.querySelector('.close-btn').addEventListener('click', closeModal);
-    // 添加编辑功能 - 点击表格行时填充表单
-    document.getElementById('order-table-body').addEventListener('click', function(e) {
+
+    // 点击表格行时跳转到详情页
+    document.getElementById('order-table-body').addEventListener('dblclick', function(e) {
         const row = e.target.closest('tr');
         if (row && !e.target.closest('.row-select')) {
             const orderId = row.querySelector('.row-select').dataset.id;
-            fetch(`/api/appointment_orders/${orderId}`)
-                .then(response => response.json())
-                .then(order => {
-                    document.getElementById('modal-title').textContent = '编辑预约工单';
-                    document.getElementById('yygdh').value = order.yygdh;
-                    document.getElementById('scgdh').value = order.scgdh || '';
-                    document.getElementById('jhrq').value = order.jhrq || '';
-                    document.getElementById('jhsj').value = order.jhsj || '';
-                    document.getElementById('gxdl').value = order.gxdl || '';
-                    document.getElementById('khmc').value = order.khmc || '';
-                    document.getElementById('ywy').value = order.ywy || '';
-                    document.getElementById('zzscrq').value = order.zzscrq || '';
-                    document.getElementById('zzscsj').value = order.zzscsj || '';
-                    document.getElementById('gg').value = order.gg || '';
-                    document.getElementById('ylzs').value = order.ylzs || '';
-                    document.getElementById('ylzl').value = order.ylzl || '';
-                    document.getElementById('cpzs').value = order.cpzs || '';
-                    document.getElementById('jhbz').value = order.jhbz || '';
-                    openModal();
-                });
+            // 跳转到详情页
+            window.open(`/appointment_order_detail?yygdh=${orderId}`);
         }
     });
 }
@@ -296,7 +317,7 @@ function saveOrder() {
         ylzs: document.getElementById('ylzs').value,
         ylzl: document.getElementById('ylzl').value,
         cpzs: document.getElementById('cpzs').value,
-        jhbz: document.getElementById('jhbz').value
+        jhbz: document.getElementById('jhbz').value,
     };
 
     showLoading();

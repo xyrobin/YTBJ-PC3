@@ -1,8 +1,5 @@
 {% extends "base.html" %}
-
 {% block title %}智慧排产中心-工单排产{% endblock %}
-
-
 {% block content %}
 
 
@@ -77,6 +74,10 @@
             orderItem.className = [baseClass, disabledClass, ygdClass].filter(Boolean).join(' ');
             orderItem.dataset.orderNo = order.scgdh;
             orderItem.dataset.gsxs = order.gsxs;
+            orderItem.dataset.zzscrq = order.zzscrq;
+            orderItem.dataset.zzscsj = order.zzscsj;
+            orderItem.dataset.jhrq = order.jhrq;  // 绑定交货日期
+            orderItem.dataset.jhsj = order.jhsj;  // 绑定交货时间
             // 工时为空时禁止拖动并添加提示
             if (isGsxsEmpty) {
                 orderItem.draggable = false;
@@ -93,10 +94,6 @@
                     <div class="order-details">
                         <p>客户：【${order.khmc || ''}】 规格：【${order.gg || ''}】 成品数量：【${order.sl || ''}】 </p>
                         <p>上道工序：<a href="/order?no=${order.sdgx}" target="_blank" style="color: #f36bba;" class="order-no-link">${order.sdgx || ''}</a> - 下道工序：<a href="/order?no=${order.xdgx}" target="_blank" style="color: #24c6ae;" class="order-no-link">${order.xdgx || ''}</a> </p>
-
-
-
-
                     </div>
                     <div class="order-tags">
                         <span class="tag technical-${technical}">${technical}</span>
@@ -108,6 +105,7 @@
                         <p>工艺详情：${order.gy || ''}/${order.bm || ''}/${order.pzdl || ''}</p>
                         <p>负责人：${order.ywy || ''}</p>
                         <p>原料张数/重量：${order.tlzs || ''}/${order.tlzl || ''}</p>
+                        <p>计划备注：【${order.jhbz || ''}】</p>
                         <p>备注：【${order.bz || ''}】</p>
                     </div>
                 `;
@@ -274,8 +272,8 @@
                 const orderElement = document.createElement('div');
                 //orderElement.className = 'order-item';
                 const baseClass = 'order-item';
-            const ygdClass = order.is_ygd === 1 ? 'ygd-order' : '';
-            orderElement.className = [baseClass, ygdClass].filter(Boolean).join(' ');
+                const ygdClass = order.is_ygd === 1 ? 'ygd-order' : '';
+                orderElement.className = [baseClass, ygdClass].filter(Boolean).join(' ');
                 orderElement.dataset.orderNo = orderNo;
                 orderElement.dataset.gsxs = orderDuration;
                 orderElement.style.height = calculateOrderHeight(orderDuration);
@@ -299,6 +297,7 @@
                         <p>上道工序：${order.sdgx || ''} - 下道工序：${order.xdgx || ''} </p>
                          <p>负责人：${order.ywy}</p>
                          <p>原料张数/重量：${order.tlzs}/${order.tlzl}</p>
+                         <p>计划备注：${order.jhbz}</p>
                          <p>备注：${order.bz}</p>
                      </div>
                     `;
@@ -353,8 +352,12 @@
                 group: 'shared',
                 animation: 150,
                 onAdd: function (evt) {
-                    // console.log("拖动2"+ evt);
+                    console.log("拖动2，evt.item.dataset内容:", evt.item.dataset);
                     const orderNo = evt.item.dataset.orderNo;
+                    const zzscrq = evt.item.dataset.zzscrq === 'null' ? '2025-01-01' : evt.item.dataset.zzscrq;
+                    const zzscsj = evt.item.dataset.zzscsj === 'null' ? '00:00' : evt.item.dataset.zzscsj;
+                    const jhrq = evt.item.dataset.jhrq === 'null' ? '2099-12-31' : evt.item.dataset.jhrq;
+                    const jhsj = evt.item.dataset.jhsj === 'null' ? '23:59' : evt.item.dataset.jhsj;
                     const date = evt.to.dataset.date;
                     const shift = evt.to.dataset.shift;
                     // 自动获取拖入单元格的时间，不再需要手动输入
@@ -365,15 +368,8 @@
 
                     const itemEl = evt.item;
                     const target = evt.to;
-                    const planDate = target.getAttribute('data-date');
+                    // const planDate = target.getAttribute('data-dte');
 
-                    // 构建确认消息
-                    const confirmMessage = `确定要将工单${orderNo}排产到${planDate} ${startTime}吗？`;
-                    if (!confirm(confirmMessage)) {
-                        // 用户取消，将工单移回原位置
-                        evt.from.appendChild(itemEl);
-                        return;
-                    }
 
 
                     // 1. 工时有效性前置校验
@@ -414,15 +410,47 @@
                     if (startTime) {
                         // 计算计划完工时间
                         const startDateTime = new Date(`${date}T${startTime}`);
-                        // startDateTime.setHours(startDateTime.getHours() + orderDuration);
-                        // 替换原有的setHours计算方式，优化小数工时计算逻辑
+                        const endDateTime = new Date(startDateTime);
                         const totalMinutes = Math.round(orderDuration * 60);
-                        // 将总分钟数转换为毫秒并添加到起始时间
-                        startDateTime.setTime(startDateTime.getTime() + totalMinutes * 60 * 1000);
-                        console.log('计算后的时间：', startDateTime);
-                        const jhwgrq = formatDate(startDateTime);
+                        endDateTime.setTime(startDateTime.getTime() + totalMinutes * 60 * 1000);
+                        console.log('计算后的时间：', endDateTime);
+                        const jhwgrq = formatDate(endDateTime);
                         console.log('计算后的完工日期', jhwgrq);
-                        const jhwgsj = `${startDateTime.getHours().toString().padStart(2, '0')}:${startDateTime.getMinutes().toString().padStart(2, '0')}`;
+                        const jhwgsj = `${endDateTime.getHours().toString().padStart(2, '0')}:${endDateTime.getMinutes().toString().padStart(2, '0')}`;
+
+                        //最早开始时间检查
+                        const earliestStartTime = new Date(`${zzscrq}T${zzscsj}`);
+                        if (startDateTime < earliestStartTime) {
+                            const confirmMessage = `排产时间【${date} ${startTime}】，早于当前工单最早开始时间【${zzscrq} ${zzscsj}】，可能出现生产准备不到位或库存周期过长情况，确定要排产吗？`;
+                            if (!confirm(confirmMessage)) {
+                                // 用户取消，将工单移回原位置
+                                evt.from.appendChild(itemEl);
+                                return;
+                            }
+                        }
+
+                        //交货期检查
+                        const latestEndTime = new Date(`${jhrq}T${jhsj}`);
+                        if (endDateTime > latestEndTime) {
+                            const confirmMessage = `计划完工时间【${jhwgrq} ${jhwgsj}】，晚于当前工单交货时间【${jhrq} ${jhsj}】，可能出现交付延迟或影响下道工序进行，确定要排产吗？`;
+                            if (!confirm(confirmMessage)) {
+                                // 用户取消，将工单移回原位置
+                                evt.from.appendChild(itemEl);
+                                return;
+                            }
+                        }
+
+                        //提交确认提醒
+                        //const confirmMessage = `确定要将工单${orderNo}排产到${date} ${startTime}吗？`;
+                        // const confirmMessage = `jhrq:【${jhrq}】,jhsj:【${jhsj}】,endDateTime:【${endDateTime}】   latestEndTime:【${latestEndTime}】
+                        // date:【${date}】,startTime:【${startTime}】,startDateTime:【${startDateTime}】,earliestStartTime:【${earliestStartTime}】`;
+                        // if (!confirm(confirmMessage)) {
+                        //     // 用户取消，将工单移回原位置
+                        //     evt.from.appendChild(itemEl);
+                        //     return;
+                        // }
+
+
 
                         // 调用排产API
                         fetch('/api/schedule', {

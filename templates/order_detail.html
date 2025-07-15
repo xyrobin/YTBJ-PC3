@@ -4,8 +4,10 @@
 <div class="order-detail-container">
     <!-- <h2 style="margin: 10px;">生产工单详情：<span class="scgdh"></span></h2> -->
     <div class="order-header">
-        <h2>工单详情：<span class="scgdh"></span><span class="badge jzmc-badge jzmc"></span><button id="edit-btn" class="edit-button">修改信息</button></h2>
-        
+        <h2>工单详情：<span class="scgdh"></span><span class="badge jzmc-badge jzmc"></span>
+            <button id="edit-btn" class="edit-button">修改信息</button>
+            <button id="edit-gs-btn" class="edit-button">修改工时</button>
+        </h2>
     </div>
 
     <!-- 添加模态框 -->
@@ -16,11 +18,11 @@
             <form id="edit-form">
                 <div class="form-group">
                     <label for="jhrq">交货日期：</label>
-                    <input type="date" id="jhrq" name="jhrq" >
+                    <input type="date" id="jhrq" name="jhrq">
                 </div>
                 <div class="form-group">
                     <label for="jhsj">交货时间：</label>
-                    <input type="time" id="jhsj" name="jhsj" >
+                    <input type="time" id="jhsj" name="jhsj">
                 </div>
                 <div class="form-group">
                     <label for="zzscrq">最早生产日期：</label>
@@ -33,6 +35,27 @@
                 <div class="form-group">
                     <label for="jhbz">计划备注：</label>
                     <textarea id="jhbz" name="jhbz" rows="3"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="confirm-btn">确认修改</button>
+                    <button type="button" class="cancel-btn">取消</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- 工时修改模态框 -->
+    <div id="edit-gs-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h3>修改工时</h3>
+            <form id="edit-gs-form">
+                <div class="form-group">
+                    <label for="tzgs">工时：</label>
+                    <input type="number" id="tzgs" name="tzgs" step="0.5" required>
+                </div>
+                <div class="form-group">
+                    <label for="gstzyy">工时修改原因：</label>
+                    <textarea id="gstzyy" name="gstzyy" rows="3"></textarea>
                 </div>
                 <div class="form-actions">
                     <button type="submit" class="confirm-btn">确认修改</button>
@@ -186,6 +209,10 @@
                     <span class="value bm"></span>
                 </div>
                 <div class="info-item">
+                    <span class="label">计划备注：</span>
+                    <span class="value jhbz"></span>
+                </div>
+                <div class="info-item">
                     <span class="label">备注：</span>
                     <span class="value bz"></span>
                 </div>
@@ -204,10 +231,16 @@
         // 在fetch成功回调中调用校验函数
         // 获取DOM元素
         const editBtn = document.getElementById('edit-btn');
+        const editGsBtn = document.getElementById('edit-gs-btn'); // 新增
         const modal = document.getElementById('edit-modal');
+        const gsModal = document.getElementById('edit-gs-modal'); // 新增
         const closeBtn = document.querySelector('.close-btn');
         const cancelBtn = document.querySelector('.cancel-btn');
         const editForm = document.getElementById('edit-form');
+        // 新增工时模态框元素
+        const gsCloseBtn = gsModal.querySelector('.close-btn');
+        const gsCancelBtn = gsModal.querySelector('.cancel-btn');
+        const gsEditForm = document.getElementById('edit-gs-form');
         let currentOrder = null;
 
         // 在获取订单数据后保存当前订单对象
@@ -215,8 +248,7 @@
             .then(response => response.json())
             .then(data => {
                 console.log(data)
-                // console.log('获取到的订单数据:', data[0], '其中khmc字段值为:', data[0].khmc?data[0].khmc:'无');
-
+                //console.log('获取到的订单数据:', data[0], '其中khmc字段值为:', data[0].khmc?data[0].khmc:'无');
                 //const order = data && data.length > 0 ? data[0] : null;
                 window.order = data && data.length > 0 ? data[0] : null;
 
@@ -239,16 +271,12 @@
                 // 在数据绑定部分添加日期时间拆分逻辑
                 Object.keys(order).forEach(key => {
                     // 处理日期时间字段（拆分日期和时间）
-                    if (['zzscrq', 'jhksrq', 'jhrq'].includes(key)) {
-                        // const dateTime = order[key].split(' ');
-                        // if (dateTime.length === 2) {
-                        //     setText(key, dateTime[0]); // 日期部分
-                        //     setText(key.replace('rq', 'sj'), dateTime[1]); // 时间部分（假设时间字段是rq替换为sj）
-                        // }
-                        setText(key, order[key]);
-                    } else {
-                        setText(key, order[key]);
-                    }
+                    // if (['zzscrq', 'jhksrq', 'jhrq'].includes(key)) {
+                    //     setText(key, order[key]);
+                    // } else {
+                    //     setText(key, order[key]);
+                    // }
+                    setText(key, order[key]);
                 });
 
 
@@ -261,6 +289,11 @@
                         statusElement.classList.add(`status-${order.gdjhzt.replace(/\s+/g, '')}`);
                     }
                 });
+                // 新增：根据工单状态控制修改按钮显示
+                if (order.gdjhzt === '已排产') {
+                    editBtn.style.display = 'none';
+                    editGsBtn.style.display = 'none'; // 同时隐藏工时修改按钮
+                }
                 //上道工序
                 const sdgxElements = document.getElementsByClassName('sdgx-off');
                 Array.from(sdgxElements).forEach(sdgxElements => {
@@ -304,21 +337,18 @@
 
                 // 时间校验
                 validateProductionTime(order);
-                //编辑框赋值
-                populateEditForm(order);
+
             });
 
 
 
         // 添加时间校验
-        // 修改解析函数以支持完整datetime字符串
         function parseDateTime(dateStr, timeStr) {
 
             if (!dateStr) return null;
             timeStr = timeStr || '23:59:59';
             // 直接解析完整的日期时间字符串
             const dateTime = new Date(dateStr + ' ' + timeStr);
-            // 验证日期有效性
             return isNaN(dateTime.getTime()) ? null : dateTime;
         }
 
@@ -330,8 +360,7 @@
             const planEndTimeEl = document.getElementsByClassName('jhwgsj')[0];
             const earlyWarningEl = document.getElementsByClassName('time-warning')[0];
             const lateWarningEl = document.getElementsByClassName('time-warning')[1];
-
-            // 修改：直接传入完整datetime字符串
+            //创建时间变量
             const earliestDateTime = parseDateTime(order.zzscrq, order.zzscsj);
             const planDateTime = parseDateTime(order.jhksrq, order.jhkssj);
             const planEndDateTime = parseDateTime(order.jhwgrq, order.jhwgsj);
@@ -386,10 +415,18 @@
             document.getElementById('zzscsj').value = order.zzscsj || '';
             document.getElementById('jhbz').value = order.jhbz || '';
         }
+        // 填充工时编辑表单
+        function populateGsEditForm(order) {
+            console.log('调用工时编辑框初始值方法');
+            document.getElementById('tzgs').value = order.tzgs || '';
+            document.getElementById('gstzyy').value = order.gstzyy || '';
+        }
 
         // 打开模态框
         editBtn.onclick = function () {
             modal.style.display = 'block';
+            //编辑框赋值
+            populateEditForm(order);
         }
 
         // 关闭模态框
@@ -400,14 +437,36 @@
         closeBtn.onclick = closeModal;
         cancelBtn.onclick = closeModal;
 
+        // 新增：工时模态框控制
+        editGsBtn.onclick = function () {
+            gsModal.style.display = 'block';
+            populateGsEditForm(order); // 填充工时表单
+        }
+
+        // 关闭工时模态框
+        function closeGsModal() {
+            gsModal.style.display = 'none';
+        }
+
+        gsCloseBtn.onclick = closeGsModal;
+        gsCancelBtn.onclick = closeGsModal;
+
+
+
+
         // 点击模态框外部关闭
         window.onclick = function (event) {
             if (event.target == modal) {
                 closeModal();
             }
         }
+        window.onclick = function (event) {
+            if (event.target == gsModal) {
+                closeGsModal();
+            }
+        }
 
-        // 表单提交处理
+        // 信息修改表单提交处理
         editForm.onsubmit = function (e) {
             e.preventDefault();
 
@@ -449,6 +508,7 @@
                         // Object.assign(currentOrder, formData);
                         // bindOrderData(currentOrder);
                         // validateProductionTime(currentOrder);
+                        location.reload();
                     } else {
                         alert('更新失败: ' + (data.message || '未知错误'));
                     }
@@ -463,6 +523,60 @@
 
 
         };
+        // 工时信息修改表单提交处理
+        gsEditForm.onsubmit = function (e) {
+            e.preventDefault();
+            // 收集表单数据
+            const gsFormData = {
+                scgdh: orderNo,
+                tzgs: document.getElementById('tzgs').value,
+                gstzyy: document.getElementById('gstzyy').value
+            };
+
+            // 显示加载状态
+            showLoading();
+
+            // 调用更新接口
+            fetch('/api/update_order_gs', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(gsFormData)
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('更新失败');
+                        alert('更新失败');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // 隐藏加载状态
+                    hideLoading();
+
+                    if (data.success) {
+                        alert('更新成功！');
+                        closeGsModal();
+                        // 更新页面显示的数据
+                        // Object.assign(currentOrder, formData);
+                        // bindOrderData(currentOrder);
+                        // validateProductionTime(currentOrder);
+                        location.reload();
+                    } else {
+                        alert('更新失败: ' + (data.message || '未知错误'));
+                    }
+                })
+                .catch(error => {
+                    if (error) {
+                        hideLoading();
+                        console.error('更新错误:', error.toString());
+                        alert('更新时发生错误: ' + error.message);
+                    }
+                });
+        }
+
+
     };
 
     // 添加加载状态控制函数

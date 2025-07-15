@@ -1,70 +1,189 @@
 {% extends "base.html" %}
-
 {% block title %}智慧排产中心-工单查询{% endblock %}
-
 {% block content %}
-    <div class="container">
-        <!-- <h1>工单查询与编辑</h1> -->
-        <div class="table-container">
-            <table id="orderTable">
-                <thead>
-                    <tr>
-                        <th>生产工单号</th>
-                        <th>交货日期</th>
-                        <th>交货时间</th>
-                        <th>业务员</th>
-                        <th>原料库位</th>
-                        <th>工时(小时)</th>
-                        <th>计划开始日期</th>
-                        <th>计划开始时间</th>
-                        <th>班次</th>
-                        <th>最早开始日期</th>
-                        <th>最早开始时间</th>
-                        <th>工单计划状态</th>
-                        <th>操作</th>
-                    </tr>
-                </thead>
-                <tbody id="orderTableBody"></tbody>
-            </table>
-        </div>
+<div class="container" style="display: block;">
+    <div class="search-container">
+        <form id="search-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>生产工单号:</label>
+                    <input type="text" name="scgdh" placeholder="请输入生产工单号">
+                </div>
+                <div class="form-group">
+                    <label>排产状态:</label>
+                    <select name="gdjhzt">
+                        <option value="">全部</option>
+                        <option value="待排产">待排产</option>
+                        <option value="已排产">已排产</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>交货日期:</label>
+                    <input type="date" name="jhrq">
+                </div>
+                <div class="form-group">
+                    <label>业务员:</label>
+                    <input type="text" name="ywy" placeholder="请输入业务员">
+                </div>
+
+                <div class="form-group">
+                    <label>计划开始日期:</label>
+                    <input type="date" name="jhksrq">
+                </div>
+                <div class="form-group">
+                    <label>客户名称:</label>
+                    <input type="text" name="khmc" placeholder="请输入客户名称">
+                </div>
+                <div class="form-group">
+                    <label>规格:</label>
+                    <input type="text" name="gg" placeholder="请输入规格">
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-search">查询</button>
+                    <button type="reset" class="btn btn-reset">重置</button>
+                </div>
+            </div>
+        </form>
     </div>
+    <!-- <h1>工单查询与编辑</h1> -->
+    <div class="table-container">
+        <table id="orderTable">
+            <thead>
+                <tr>
+                    <th>生产工单号</th>
+                    <th>排产状态</th>
+                    <th>交货日期</th>
+                    <th>交货时间</th>
+                    <th>业务员</th>
+                    <th>原料库位</th>
+                    <th>工时(小时)</th>
+                    <th>计划开始日期</th>
+                    <th>计划开始时间</th>
+                    <th>班次</th>
+                    <th>最早开始日期</th>
+                    <th>最早开始时间</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="orderTableBody"></tbody>
+        </table>
+    </div>
+</div>
 <style>
-        .editable { border: 1px solid #ddd; padding: 4px; }
-        .non-editable { background-color: #f9f9f9; padding: 4px; }
-        .table-container { overflow-x: auto; margin: 20px; width: 100%;}
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
-        .action-btn { margin: 0 5px; padding: 5px 10px; cursor: pointer; }
-        .save-btn { background-color: #4CAF50; color: white; border: none; }
-        .cancel-btn { background-color: #f44336; color: white; border: none; }
-        /* 添加空值高亮样式 */
-        .empty-value { background-color: #fff3cd; border: 2px solid #ffeeba; }
-    </style>
-    <script>
-        // 页面加载时获取所有工单数据
-        document.addEventListener('DOMContentLoaded', () => {
-            fetch('/api/all_orders')
-                .then(response => response.json())
-                .then(orders => renderOrders(orders))
-                .catch(error => console.error('Error loading orders:', error));
+    .editable {
+        border: 1px solid #ddd;
+        padding: 4px;
+    }
+
+    .non-editable {
+        background-color: #f9f9f9;
+        padding: 4px;
+    }
+
+    .table-container {
+        overflow-x: auto;
+        margin: 20px;
+        width: 100%;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th,
+    td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+    }
+
+    th {
+        background-color: #f2f2f2;
+    }
+
+    .action-btn {
+        margin: 0 5px;
+        padding: 5px 10px;
+        cursor: pointer;
+    }
+
+    .save-btn {
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+    }
+
+    .cancel-btn {
+        background-color: #f44336;
+        color: white;
+        border: none;
+    }
+
+    /* 添加空值高亮样式 */
+    .empty-value {
+        background-color: #fff3cd;
+        border: 2px solid #ffeeba;
+    }
+</style>
+<script>
+    // 页面加载时获取所有工单数据
+    document.addEventListener('DOMContentLoaded', () => {
+        // 初始化搜索表单事件监听
+        document.getElementById('search-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const params = Object.fromEntries(formData.entries());
+            loadFilteredOrders(params);
         });
 
-        // 渲染工单表格
-        function renderOrders(orders) {
-            const tableBody = document.getElementById('orderTableBody');
-            tableBody.innerHTML = '';
+        // 初始加载所有数据
+        loadFilteredOrders({});
+    });
 
-            orders.forEach(order => {
-                const row = document.createElement('tr');
-                // 判断交货日期是否为空，为空则添加empty-value类
-                const jhrqClass = order.jhrq ? 'editable' : 'editable empty-value';
-                // 判断是否已排产
-                const isScheduled = order.gdjhzt === '已排产';
-                const disabledAttr = isScheduled ? 'disabled' : '';
-                const saveBtnClass = isScheduled ? 'action-btn  disabled-btn' : 'action-btn save-btn';
-                
-                row.innerHTML = `
+    // 加载筛选后的工单数据
+    function loadFilteredOrders(params) {
+        showLoading();
+        fetch('/api/all_orders' + (Object.keys(params).length ? '?' + new URLSearchParams(params) : ''))
+            .then(response => response.json())
+            .then(orders => {
+                renderOrders(orders);
+                hideLoading();
+            })
+            .catch(error => {
+                console.error('Error loading orders:', error);
+                hideLoading();
+            });
+    }
+
+    // 添加加载状态显示函数
+    function showLoading() {
+        const loading = document.createElement('div');
+        loading.id = 'loading';
+        loading.innerHTML = '<div class="spinner"></div><div>加载中...</div>';
+        document.body.appendChild(loading);
+    }
+
+    function hideLoading() {
+        const loading = document.getElementById('loading');
+        if (loading) loading.remove();
+    }
+
+    // 渲染工单表格
+    function renderOrders(orders) {
+        const tableBody = document.getElementById('orderTableBody');
+        tableBody.innerHTML = '';
+
+        orders.forEach(order => {
+            const row = document.createElement('tr');
+            // 判断交货日期是否为空，为空则添加empty-value类
+            const jhrqClass = order.jhrq ? 'editable' : 'editable empty-value';
+            // 判断是否已排产
+            const isScheduled = order.gdjhzt === '已排产';
+            const disabledAttr = isScheduled ? 'disabled' : '';
+            const saveBtnClass = isScheduled ? 'action-btn  disabled-btn' : 'action-btn save-btn';
+
+            row.innerHTML = `
                     <td class="non-editable">${order.scgdh}</td>
                     <td class=" status-${order.gdjhzt ? order.gdjhzt.replace(/\s+/g, '') : ''}">${order.gdjhzt || ''}</td>
                     <td><input type="date" class="${jhrqClass}" data-field="jhrq" value="${order.jhrq || ''}" ${disabledAttr}></td>
@@ -83,33 +202,33 @@
                         <button class="detail-btn" onclick="window.open('/order?no=${order.scgdh}', '_blank')">详情</button>
                     </td>
                 `;
-                tableBody.appendChild(row);
+            tableBody.appendChild(row);
 
-                // 添加时间校验事件监听
-                const timeInputs = row.querySelectorAll('input[type="time"]');
-                timeInputs.forEach(input => {
-                    // input.addEventListener('input', validateTimeInput);
-                    input.addEventListener('blur', validateTimeInput);
-                });
+            // 添加时间校验事件监听
+            const timeInputs = row.querySelectorAll('input[type="time"]');
+            timeInputs.forEach(input => {
+                // input.addEventListener('input', validateTimeInput);
+                input.addEventListener('blur', validateTimeInput);
             });
-        }
+        });
+    }
 
-        // 保存订单修改
-        function saveOrder(scgdh, button) {
-            const row = button.closest('tr');
-            const orderData = {
-                scgdh: scgdh,
-                jhrq: row.querySelector('[data-field="jhrq"]').value,
-                jhsj: row.querySelector('[data-field="jhsj"]').value,
-                zzscrq: row.querySelector('[data-field="zzscrq"]').value,
-                zzscsj: row.querySelector('[data-field="zzscsj"]').value
-            };
+    // 保存订单修改
+    function saveOrder(scgdh, button) {
+        const row = button.closest('tr');
+        const orderData = {
+            scgdh: scgdh,
+            jhrq: row.querySelector('[data-field="jhrq"]').value,
+            jhsj: row.querySelector('[data-field="jhsj"]').value,
+            zzscrq: row.querySelector('[data-field="zzscrq"]').value,
+            zzscsj: row.querySelector('[data-field="zzscsj"]').value
+        };
 
-            fetch('/api/update_order', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(orderData)
-            })
+        fetch('/api/update_order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(orderData)
+        })
             .then(response => response.json())
             .then(result => {
                 if (result.success) {
@@ -119,29 +238,29 @@
                 }
             })
             .catch(error => console.error('Error saving order:', error));
+    }
+
+    // 时间输入校验函数（限制分钟为00或30）
+    function validateTimeInput(e) {
+        const input = e.target;
+        const timeValue = input.value;
+        if (!timeValue) return;
+
+        const [hours, minutes] = timeValue.split(':').map(Number);
+        let adjustedMinutes, adjustedHours = hours;
+
+        // 校验并修正分钟
+        if (minutes !== 0 && minutes !== 30) {
+            // 四舍五入到最近的00或30分钟
+            adjustedMinutes = minutes < 15 ? 0 : minutes < 45 ? 30 : 0;
+            // 处理小时进位
+            if (adjustedMinutes === 0 && minutes >= 45) adjustedHours = (hours + 1) % 24;
+
+            // 格式化时间字符串
+            const formattedTime = `${adjustedHours.toString().padStart(2, '0')}:${adjustedMinutes.toString().padStart(2, '0')}`;
+            input.value = formattedTime;
+            alert('分钟只能输入00或30，已自动修正为' + formattedTime);
         }
-
-        // 时间输入校验函数（限制分钟为00或30）
-        function validateTimeInput(e) {
-            const input = e.target;
-            const timeValue = input.value;
-            if (!timeValue) return;
-
-            const [hours, minutes] = timeValue.split(':').map(Number);
-            let adjustedMinutes, adjustedHours = hours;
-
-            // 校验并修正分钟
-            if (minutes !== 0 && minutes !== 30) {
-                // 四舍五入到最近的00或30分钟
-                adjustedMinutes = minutes < 15 ? 0 : minutes < 45 ? 30 : 0;
-                // 处理小时进位
-                if (adjustedMinutes === 0 && minutes >= 45) adjustedHours = (hours + 1) % 24;
-
-                // 格式化时间字符串
-                const formattedTime = `${adjustedHours.toString().padStart(2, '0')}:${adjustedMinutes.toString().padStart(2, '0')}`;
-                input.value = formattedTime;
-                alert('分钟只能输入00或30，已自动修正为' + formattedTime);
-            }
-        }
-    </script>
+    }
+</script>
 {% endblock %}
