@@ -25,16 +25,22 @@ body {
     border-radius: 8px;
     padding: 15px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    overflow-y: hidden; /* 修改为hidden，由orderList处理滚动 */
-    display: flex;      /* 添加flex布局 */
-    flex-direction: column; /* 垂直排列子元素 */
+    overflow-y: hidden;
+    /* 修改为hidden，由orderList处理滚动 */
+    display: flex;
+    /* 添加flex布局 */
+    flex-direction: column;
+    /* 垂直排列子元素 */
 }
 
 /* 工单列表容器样式 */
 #orderList {
-    flex: 1;           /* 填充剩余空间 */
-    overflow-y: auto;  /* 内容超出时显示滚动条 */
-    min-height: 0;     /* 修复flex子元素高度计算问题 */
+    flex: 1;
+    /* 填充剩余空间 */
+    overflow-y: auto;
+    /* 内容超出时显示滚动条 */
+    min-height: 0;
+    /* 修复flex子元素高度计算问题 */
 }
 
 .order-item {
@@ -48,7 +54,7 @@ body {
 
 .order-item:active {
     cursor: grabbing;
-    
+
 }
 
 /* 添加标签样式 */
@@ -57,7 +63,7 @@ body {
     /* margin-bottom: 20px; */
 }
 
-.order-detail-container h2{
+.order-detail-container h2 {
     margin-bottom: 20px;
 }
 
@@ -85,15 +91,19 @@ body {
     border-radius: 8px;
     padding: 15px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    display: flex;          /* 添加flex布局 */
-    flex-direction: column; /* 垂直排列子元素 */
+    display: flex;
+    /* 添加flex布局 */
+    flex-direction: column;
+    /* 垂直排列子元素 */
 }
 
 /* 表格容器滚动优化 */
 .shift-container {
     /* 移除固定max-height: 950px */
-    flex: 1;                /* 填充父容器剩余高度 */
-    overflow-y: auto;       /* 内容超出时显示滚动条 */
+    flex: 1;
+    /* 填充父容器剩余高度 */
+    overflow-y: auto;
+    /* 内容超出时显示滚动条 */
     margin-top: 20px;
     display: grid;
     grid-template-columns: repeat(1, 1fr);
@@ -195,24 +205,28 @@ body {
 }
 
 /* 班次单元格样式 */
-.shift-cell { 
-    text-align: center; 
-    font-weight: bold; 
-}
-
-.date-cell, .shift-cell {
+.shift-cell {
     text-align: center;
     font-weight: bold;
-    vertical-align: middle; /* 添加垂直居中属性 */
-    align-items: center;    /* 垂直居中对齐 */
-    justify-content: center;/* 水平居中对齐 */
+}
+
+.date-cell,
+.shift-cell {
+    text-align: center;
+    font-weight: bold;
+    vertical-align: middle;
+    /* 添加垂直居中属性 */
+    align-items: center;
+    /* 垂直居中对齐 */
+    justify-content: center;
+    /* 水平居中对齐 */
 }
 
 
 /* B班专属样式 */
-.shift-cell.b-shift { 
-    background-color: #888888; 
-    color: white; 
+.shift-cell.b-shift {
+    background-color: #888888;
+    color: white;
 }
 
 /* 表头样式优化 */
@@ -335,7 +349,7 @@ body {
 .navbar {
     background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
     padding: 0.8rem 0;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     position: sticky;
     top: 0;
     z-index: 1000;
@@ -353,7 +367,7 @@ body {
     color: #fff;
     font-size: 1.8rem;
     font-weight: 700;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
     transition: opacity 0.3s;
 }
 
@@ -368,7 +382,7 @@ body {
 }
 
 .nav-links a {
-    color: rgba(255,255,255,0.95);
+    color: rgba(255, 255, 255, 0.95);
     font-size: 1.1rem;
     padding: 0.5rem 1rem;
     border-radius: 5px;
@@ -378,7 +392,7 @@ body {
 
 .nav-links a.active,
 .nav-links a:hover {
-    background: rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.1);
     color: #fff;
 }
 
@@ -433,14 +447,14 @@ html {
     /* bottom: -125%; */
     width: 60%;
     left: 40%;
-    background: rgba(0,0,0,0.6);
+    background: rgba(0, 0, 0, 0.6);
     color: white;
     padding: 8px 12px;
     border-radius: 4px;
     white-space: normal;
     z-index: 9999;
     padding: 12px 16px;
-    
+
 }
 
 .process-tooltip p {
@@ -495,23 +509,55 @@ html {
 }
 
 /* 工艺类型标签 */
-.technical-摆 { background: #FF9800; color: white; }
-.technical-落 { background: #2196F3; color: white; }
-.technical-R2 { background: #4CAF50; color: black; }
-.technical-R3 { background: #16691d; color: white; }
+.technical-摆 {
+    background: #FF9800;
+    color: white;
+}
+
+.technical-落 {
+    background: #2196F3;
+    color: white;
+}
+
+.technical-R2 {
+    background: #4CAF50;
+    color: black;
+}
+
+.technical-R3 {
+    background: #16691d;
+    color: white;
+}
 
 /* 品种类型标签 */
-.variety-冷 { background: #3F51B5; color: white; }
-.variety-锌 { background: #E91E63; color: white; }
-.variety-酸 { background: #FF5722; color: white; }
-.variety-硅 { background: #009688; color: white; }
+.variety-冷 {
+    background: #3F51B5;
+    color: white;
+}
+
+.variety-锌 {
+    background: #E91E63;
+    color: white;
+}
+
+.variety-酸 {
+    background: #FF5722;
+    color: white;
+}
+
+.variety-硅 {
+    background: #009688;
+    color: white;
+}
 
 .prev-process.active {
-    background: #f36bba;color: white;
+    background: #f36bba;
+    color: white;
 }
 
 .next-process.active {
-    background: #24c6ae;color: white;
+    background: #24c6ae;
+    color: white;
 }
 
 
@@ -525,7 +571,7 @@ html {
 .detail-card {
     background: #fff;
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     padding: 2rem;
 }
 
@@ -563,9 +609,17 @@ html {
 }
 
 /* 状态标签样式 */
-.status-已排产 { background-color: #86eab0; }
-.status-待排产 { background-color: #f3e57e; }
-.status-异常 { background-color: #eaa199; }
+.status-已排产 {
+    background-color: #86eab0;
+}
+
+.status-待排产 {
+    background-color: #f3e57e;
+}
+
+.status-异常 {
+    background-color: #eaa199;
+}
 
 /* 工单计划状态样式 */
 .non-editable .status-已排产 {
@@ -634,6 +688,7 @@ td[class*="status-"] {
     font-weight: bold;
     margin-left: 10px;
 }
+
 .time-invalid {
     color: red;
     font-weight: bold;
@@ -708,7 +763,8 @@ input[disabled] {
 
 /* 模态框样式 */
 .modal {
-    display: none; /* 默认隐藏 */
+    display: none;
+    /* 默认隐藏 */
     position: fixed;
     z-index: 1000;
     left: 0;
@@ -716,7 +772,7 @@ input[disabled] {
     width: 100%;
     height: 100%;
     overflow: auto;
-    background-color: rgba(0,0,0,0.4);
+    background-color: rgba(0, 0, 0, 0.4);
 }
 
 .modal-content {
@@ -726,7 +782,7 @@ input[disabled] {
     border: 1px solid #888;
     width: 50%;
     border-radius: 8px;
-    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
 }
 
 .close-btn {
@@ -752,7 +808,8 @@ input[disabled] {
     font-weight: bold;
 }
 
-.form-group input, .form-group textarea {
+.form-group input,
+.form-group textarea {
     width: 100%;
     padding: 8px;
     box-sizing: border-box;
@@ -816,12 +873,17 @@ input[disabled] {
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 /* 预约工单页面样式 */
-h1{
+h1 {
     margin: 20px;
 }
 
@@ -831,6 +893,7 @@ h1{
     gap: 20px;
 
 }
+
 .action-buttons .btn {
     padding: 10px 15px;
     font-size: 14px;
@@ -937,13 +1000,19 @@ h1{
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 /* 紧急工单样式 */
 .order-item.ygd-order {
-    background-color: #fff5f7;  /*粉色背景 */
+    background-color: #fff5f7;
+    /*粉色背景 */
     /* border: 3px solid #ff69b4; 加深边框颜色 */
 
 }
@@ -952,29 +1021,35 @@ h1{
 .detail-container {
     margin: 20px;
 }
+
 .detail-card {
     border: 1px solid #ddd;
     border-radius: 4px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     max-height: 800px;
     overflow: auto;
 }
+
 .detail-header {
     background-color: #f5f5f5;
     padding: 12px 15px;
     border-bottom: 1px solid #ddd;
 }
+
 .detail-body {
     display: table;
     width: 100%;
     border-collapse: collapse;
 }
+
 .detail-row {
     display: table-row;
 }
+
 .detail-row:nth-child(even) {
     background-color: #f9f9f9;
 }
+
 .detail-item {
     /*display: table-cell;*/
     padding: 12px 15px;
@@ -988,9 +1063,11 @@ h1{
     font-weight: bold;
     color: #333;
 }
+
 .value {
     color: #666;
 }
+
 pre.value {
     white-space: pre-wrap;
     word-wrap: break-word;
@@ -999,4 +1076,16 @@ pre.value {
 
 th {
     text-align: center !important;
+}
+
+.early-start {
+    border: 2px solid #f3c64b !important;
+}
+
+.late-finish {
+    border: 2px solid #f34a52 !important;
+}
+
+.early-start.late-finish {
+    border: 2px dashed #ee4beeb9 !important;
 }

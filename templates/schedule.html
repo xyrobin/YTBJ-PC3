@@ -270,12 +270,36 @@
 
                 // 3. 创建工单元素（保持原高度计算方式）
                 const orderElement = document.createElement('div');
-                //orderElement.className = 'order-item';
                 const baseClass = 'order-item';
                 const ygdClass = order.is_ygd === 1 ? 'ygd-order' : '';
-                orderElement.className = [baseClass, ygdClass].filter(Boolean).join(' ');
+                
+                const zzscrq = order.zzscrq === null ? '2025-01-01' : order.zzscrq;
+                const zzscsj = order.zzscsj === null ? '00:00' : order.zzscsj;
+                const jhrq = order.jhrq === null ? '2099-12-31' : order.jhrq;
+                const jhsj = order.jhsj === null ? '23:59' : order.jhsj;
+                // 时间比较逻辑
+                const planStartTime = new Date(`${order.jhksrq}T${order.jhkssj}`);
+                const earliestStartTime = new Date(`${zzscrq}T${zzscsj}`) ;
+                const planEndTime = order.jhwgrq && order.jhwgsj ? new Date(`${order.jhwgrq}T${order.jhwgsj}`) : null;
+                const deliveryTime = new Date(`${jhrq}T${jhsj}`) ;
+                console.log('已排工单样式判断：',jhsj,zzscrq ,zzscsj,planStartTime,earliestStartTime,planEndTime,deliveryTime)
+                // 判断是否需要添加样式类
+                const earlyStartClass = earliestStartTime && planStartTime < earliestStartTime ? 'early-start' : '';
+                const lateFinishClass = planEndTime && deliveryTime && planEndTime > deliveryTime ? 'late-finish' : '';
+                
+                // 合并所有样式类
+                orderElement.className = [baseClass, ygdClass, earlyStartClass, lateFinishClass].filter(Boolean).join(' ');
+                
                 orderElement.dataset.orderNo = orderNo;
                 orderElement.dataset.gsxs = orderDuration;
+                orderElement.dataset.jhrq = order.jhrq;
+                orderElement.dataset.jhsj = order.jhsj;
+                orderElement.dataset.zzscrq = order.zzscrq;
+                orderElement.dataset.zzscsj = order.zzscsj;
+                orderElement.dataset.jhksrq = order.jhksrq;
+                orderElement.dataset.jhksjs = order.jhksjs;
+                orderElement.dataset.jhwgrq = order.jhwgrq;
+                orderElement.dataset.jhwgsj = order.jhwgsj;
                 orderElement.style.height = calculateOrderHeight(orderDuration);
                 orderElement.style.width = '100%';
                 orderElement.style.position = 'absolute';
@@ -369,7 +393,7 @@
                     const itemEl = evt.item;
                     const target = evt.to;
                     // const planDate = target.getAttribute('data-dte');
-
+                    console.log('交货期：',jhrq,jhsj,orderNo);
 
 
                     // 1. 工时有效性前置校验
@@ -409,6 +433,7 @@
                     // 4. 无冲突时继续排产流程
                     if (startTime) {
                         // 计算计划完工时间
+                        console.log('交货期：',jhrq,jhsj);
                         const startDateTime = new Date(`${date}T${startTime}`);
                         const endDateTime = new Date(startDateTime);
                         const totalMinutes = Math.round(orderDuration * 60);
@@ -441,15 +466,15 @@
                         }
 
                         //提交确认提醒
-                        // const confirmMessage = `工单交货时间：jhrq:【${jhrq}】,jhsj:【${jhsj}】,latestEndTime:【${latestEndTime}】
-                        // 工单最早开始时间：zzscrq:【${zzscrq}】,zzscsj:【${zzscsj}】,earliestStartTime:【${earliestStartTime}】
-                        // 排产时间：date:【${date}】,startTime:【${startTime}】,startDateTime:【${startDateTime}】
-                        // 计划完工时间：jhwgrq:【${jhwgrq}】,jhwgsj:【${jhwgsj}】,endDateTime:【${endDateTime}】
-                        // 调用参数：order_no: 【${orderNo}】, plan_date: 【${date}】, shift: 【${shift}】,  start_time: 【${startTime}】, jhwgrq: 【${jhwgrq}】,  // 计划完工日期 jhwgsj: 【${jhwgsj}】 
-                        // `;
+                        const confirmMessage = `工单交货时间：jhrq:【${jhrq}】,jhsj:【${jhsj}】,latestEndTime:【${latestEndTime}】
+                        工单最早开始时间：zzscrq:【${zzscrq}】,zzscsj:【${zzscsj}】,earliestStartTime:【${earliestStartTime}】
+                        排产时间：date:【${date}】,startTime:【${startTime}】,startDateTime:【${startDateTime}】
+                        计划完工时间：jhwgrq:【${jhwgrq}】,jhwgsj:【${jhwgsj}】,endDateTime:【${endDateTime}】
+                        调用参数：order_no: 【${orderNo}】, plan_date: 【${date}】, shift: 【${shift}】,  start_time: 【${startTime}】, jhwgrq: 【${jhwgrq}】,  // 计划完工日期 jhwgsj: 【${jhwgsj}】 
+                        `;
 
-                        if (!confirm(confirmMessage)) {
-                            // 用户取消，将工单移回原位置
+                         if (!confirm(confirmMessage)) {
+                             // 用户取消，将工单移回原位置
                             evt.from.appendChild(itemEl);
                             return;
                         }

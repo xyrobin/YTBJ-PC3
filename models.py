@@ -61,6 +61,8 @@ class ProductionOrderService:
                     nvl(a.TZGS,a.GSXS) GSXS,
                     a.JHKSRQ,
                     a.JHKSSJ,
+                    a.JHWGRQ,
+                    a.JHWGSJ,
                     a.BC,
                     a.ZZSCRQ,
                     a.ZZSCSJ,
