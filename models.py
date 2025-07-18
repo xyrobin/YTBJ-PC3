@@ -10,7 +10,7 @@ class ProductionOrderService:
         self.cursor = self.connection.cursor()
 
     def get_pending_orders(self):
-        # 排产-获取所有待排产工单（状态=待排产）并按最早生产日期升序排序
+        # 排产-获取所有待排产工单（工单状态未完工）并按最早生产日期升序排序
         query = """
                 SELECT a.SCGDH,
                     nvl(a.TZGS,a.GSXS) GSXS,
@@ -39,16 +39,18 @@ class ProductionOrderService:
                     nvl(b.gg,c.gg) GG,
                     nvl(b.JHZS,c.cpzs) SL,
                     a.jhbz,
-                    decode(substr(a.scgdh, 1, 3), 'YGD', 1, 0) IS_YGD
+                    decode(substr(a.scgdh, 1, 3), 'YGD', 1, 0) IS_YGD,
+                    a.gdjhzt,
+                    b.gdztms
                 FROM A_PC_SCGDWH_TAB a
                 left join A_PC_DPCSCGD_VW b
                     on a.scgdh = b.SCGDH
                     left join A_PC_YYGD_TAB c on a.scgdh = c.yygdh
-                WHERE a.GDJHZT = '待排产'
-                and nvl(a.is_deleted, 0) <> 1
+                WHERE nvl(a.is_deleted, 0) <> 1
                 and (b.GXDL = 'BL' or c.gxdl = '落料')
                 and nvl(b.jgdw,'N') = 'N'
-                order by nvl(a.JHRQ, a.GDJHQ),a.gy,a.bm,a.pzdl,a.jhsj
+                and (a.gdjhzt = '待排产' or to_date(a.jhwgrq||a.jhwgsj,'YYYY-MM-DD HH24:mi') < trunc(sysdate)+ 8/24)
+                order by decode(a.gdjhzt, '已排产', 0, 1),nvl(a.JHRQ, a.GDJHQ),a.gy,a.bm,a.pzdl,a.jhsj
         """
         self.cursor.execute(query)
         columns = [col[0].lower() for col in self.cursor.description]
@@ -146,7 +148,16 @@ class ProductionOrderService:
             self.connection.rollback()
             return {"success": False, "message": str(e)}
 
-    def get_all_orders(self, scgdh=None, gdjhzt=None, jhrq=None, ywy=None, jhksrq=None, khmc=None, gg=None):
+    def get_all_orders(
+        self,
+        scgdh=None,
+        gdjhzt=None,
+        jhrq=None,
+        ywy=None,
+        jhksrq=None,
+        khmc=None,
+        gg=None,
+    ):
         # 工单维护-获取所有工单数据，支持筛选
         query = """
         SELECT a.SCGDH, nvl(a.JHRQ, a.GDJHQ) JHRQ, JHSJ, YWY, YLKW, nvl(a.TZGS,a.GSXS) GSXS, 
@@ -158,9 +169,9 @@ class ProductionOrderService:
             and a.scgdh is not null
             and nvl(a.is_deleted, 0) <> 1
         """
-        
+
         params = {}
-        
+
         # 添加筛选条件
         if scgdh:
             query += " AND a.SCGDH LIKE :scgdh"
@@ -183,9 +194,9 @@ class ProductionOrderService:
         if gg:
             query += " AND b.QGGGMS LIKE :gg"
             params["gg"] = f"%{gg}%"
-        
+
         query += " ORDER BY jhrq"
-        
+
         self.cursor.execute(query, params)
         columns = [col[0].lower() for col in self.cursor.description]
         return [dict(zip(columns, row)) for row in self.cursor.fetchall()]
@@ -274,10 +285,17 @@ class ProductionOrderService:
         columns = [col[0].lower() for col in self.cursor.description]
         return [dict(zip(columns, row)) for row in self.cursor.fetchall()]
 
-
-
     # 预约工单处理：
-    def get_appointment_orders(self, khmc=None, ywy=None, jhrq=None, yygdh=None,scgdh=None,is_deleted=None,gdjhzt=None):
+    def get_appointment_orders(
+        self,
+        khmc=None,
+        ywy=None,
+        jhrq=None,
+        yygdh=None,
+        scgdh=None,
+        is_deleted=None,
+        gdjhzt=None,
+    ):
         # 查询预约工单数据
         query = """
             SELECT a.YYGDH,
@@ -502,16 +520,16 @@ class ProductionOrderService:
     # 预约工单绑定生产工单
     def bind_appointment_order(self, yygdh, scgdh):
         try:
-            print('预约工单绑定生产工单:',yygdh,scgdh)
+            print("预约工单绑定生产工单:", yygdh, scgdh)
             # 检查生产工单号是否已存在
             existing = self.cursor.execute(
                 "SELECT COUNT(*) as count FROM A_PC_SCGDWH_TAB WHERE scgdh = :scgdh AND gdjhzt = '待排产' and nvl(is_deleted, 0) = 0 AND yygdh is null ",
                 {"scgdh": scgdh},
             )
-            print('检查生产工单数量1:',existing)
+            print("检查生产工单数量1:", existing)
             result = self.cursor.fetchone()  # 获取查询结果元组，格式如: (count_value,)
             existing = result[0] if result else 0  # 使用索引访问元组元素
-            print('检查生产工单数量2:',existing)
+            print("检查生产工单数量2:", existing)
 
             if existing != 1:
                 return False
@@ -523,16 +541,16 @@ class ProductionOrderService:
             print(f"绑定工单失败: {e}")
             self.connection.rollback()
             return False
-
+            
+    # 取消预约工单，设置is_deleted=1
     def cancel_appointment_order(self, yygdh):
-        # 取消预约工单，设置is_deleted=1
         try:
             update_sql = """
             UPDATE A_PC_SCGDWH_TAB
             SET is_deleted = 1
             WHERE scgdh = :yygdh AND gdjhzt = '待排产'
             """
-            self.cursor.execute(update_sql, {'yygdh': yygdh})
+            self.cursor.execute(update_sql, {"yygdh": yygdh})
             self.connection.commit()
             # 检查是否有记录被更新
             return self.cursor.rowcount > 0
@@ -540,3 +558,22 @@ class ProductionOrderService:
             self.connection.rollback()
             print(f"取消预约工单失败: {e}")
             return False
+
+    #查询班次时间段数据
+    def get_shift_time_slots(self):
+        try:
+            sql = """
+                SELECT slot_id, crew_ll
+                FROM A_DC_SHIFT_TIME_SLOTS_TAB
+                WHERE datetime_point BETWEEN TRUNC(SYSDATE) + INTERVAL '8' HOUR AND TRUNC(SYSDATE + 10) + INTERVAL '7' HOUR + INTERVAL '59'
+                MINUTE
+                order by slot_id
+            """
+            self.cursor.execute(sql)
+
+            # 转换为字典列表返回
+            columns = [col[0].lower() for col in self.cursor.description]
+            return [dict(zip(columns, row)) for row in self.cursor.fetchall()]
+        except Exception as e:
+            print(f"查询班次时间段失败: {str(e)}")
+

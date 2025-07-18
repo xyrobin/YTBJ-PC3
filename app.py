@@ -225,7 +225,22 @@ def cancel_appointment_order(yygdh):
 @app.route('/inventory_report')
 def inventory_report():
     return render_template('inventory_report.html')
+
+# 获取班次时间段数据API
+@app.route('/api/shift_time_slots', methods=['GET'])
+def api_shift_time_slots():
+    try:
+        result = ProductionOrderService().get_shift_time_slots()
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': '获取班次时间段数据失败'
+        }), 500
         
 if __name__ == '__main__':
     app.run(debug=True,port=5003)
+
+
 

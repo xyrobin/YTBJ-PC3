@@ -165,7 +165,7 @@ body {
 }
 
 .schedule-table tr:hover {
-    background-color: #f1f1f1;
+    background-color: #abc5e4;
 }
 
 /* 时间段样式 */
@@ -225,7 +225,7 @@ body {
 
 /* B班专属样式 */
 .shift-cell.b-shift {
-    background-color: #888888;
+    background-color: #c9c9c9;
     color: white;
 }
 
@@ -268,6 +268,23 @@ body {
     /* 固定行高，确保对齐 */
 }
 
+/* 不可用时间段样式 */
+.time-slot-row [data-is-enable="false"] {
+    background-color: #888888 !important;
+    cursor: not-allowed;
+    color: #ffffff !important;
+    border: 0;
+}
+
+/* 不可用时间段提示文字样式 */
+.slot-disabled-text {
+    color: #ffffff;
+    font-size: 12px;
+    text-align: center;
+    padding: 2px;
+    line-height: 1.2;
+}
+
 /* 已排工单样式 */
 .order-slot {
     /* display: flex; */
@@ -284,6 +301,13 @@ body {
     /* position: absolute;
     overflow: visible; */
     /* 基础高度为单个时间段高度，根据工时倍数计算 */
+}
+
+/* 拖拽时的幽灵元素样式 */
+.order-ghost {
+    opacity: 0.8;
+    transform: none !important;  /* 禁用不必要的变换 */
+    box-shadow: none !important; /* 避免阴影导致尺寸变化 */
 }
 
 /* 时间段单元格样式 */
@@ -1009,11 +1033,17 @@ h1 {
     }
 }
 
-/* 紧急工单样式 */
+/* 排产页面预约工单样式 */
 .order-item.ygd-order {
-    background-color: #fff5f7;
+    background-color: #d2ffd9;
     /*粉色背景 */
     /* border: 3px solid #ff69b4; 加深边框颜色 */
+
+}
+
+/* 排产页面异常状态工单样式 */
+.order-item.gdzt-order {
+    background-color: #ffe1f9;
 
 }
 
